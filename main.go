@@ -6,9 +6,12 @@ import (
 	"github.com/miekg/dns"
 
 	"github.com/dhcmrlchtdj/shunt/client"
+	"github.com/dhcmrlchtdj/shunt/config"
 )
 
 func main() {
+	config.Read()
+
 	dns.HandleFunc(".", handleRequest)
 
 	server := &dns.Server{Addr: ":1053", Net: "udp"}

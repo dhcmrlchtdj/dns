@@ -1,12 +1,13 @@
 package client
 
-import (
-	"encoding/json"
-	"log"
-	"net/http"
+///
 
-	"github.com/miekg/dns"
-)
+func Query(name string, qtype uint16) []Answer {
+
+	return nil
+}
+
+///
 
 type Answer struct {
 	// The record owner.
@@ -20,35 +21,3 @@ type Answer struct {
 }
 
 type DNSClient func(string, uint16) []Answer
-
-func Query(name string, qtype uint16) []Answer {
-	client := dohClientPool.Get().(*http.Client)
-	defer func() {
-		dohClientPool.Put(client)
-	}()
-
-	req, err := http.NewRequest("GET", "https://cloudflare-dns.com/dns-query", nil)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	req.Header.Set("accept", "application/dns-json")
-	q := req.URL.Query()
-	q.Set("name", name)
-	q.Set("type", dns.Type(qtype).String())
-	req.URL.RawQuery = q.Encode()
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	var r DNSResponse
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		log.Println(err)
-		return nil
-	}
-	return r.Answer
-}
