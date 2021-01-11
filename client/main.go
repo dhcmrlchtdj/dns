@@ -1,6 +1,7 @@
 package client
 
 import (
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -65,9 +66,15 @@ func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
 		return nil, false
 	}
 
-	if time.Now().After(cached.expired) {
+	elapsed := cached.expired.Sub(time.Now())
+	ttl := int(math.Ceil(elapsed.Seconds()))
+	if ttl <= 0 {
 		c.cache.Delete(key)
 		return nil, false
+	}
+
+	for idx := range cached.answer {
+		cached.answer[idx].TTL = ttl
 	}
 
 	return cached.answer, true
