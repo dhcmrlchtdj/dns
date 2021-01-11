@@ -13,7 +13,7 @@ import (
 
 ///
 
-var httpClient = func() *http.Client {
+var dohHttpClient = func() *http.Client {
 	dialer := &net.Dialer{
 		Resolver: &net.Resolver{
 			PreferGo: true,
@@ -33,7 +33,7 @@ var httpClient = func() *http.Client {
 	return &http.Client{Transport: customTransport}
 }()
 
-func GenDoHClient(dohServer string) DNSClient {
+func GenDoHClient(dohServer string) dnsClient {
 	// https://cloudflare-dns.com/dns-query
 	// https://doh.pub/dns-query
 	return func(name string, qtype uint16) []Answer {
@@ -50,7 +50,7 @@ func GenDoHClient(dohServer string) DNSClient {
 		q.Set("cd", "false")                    // CD bit - set to disable validation
 		req.URL.RawQuery = q.Encode()
 
-		resp, err := httpClient.Do(req)
+		resp, err := dohHttpClient.Do(req)
 		if err != nil {
 			log.Println(err)
 			return nil
