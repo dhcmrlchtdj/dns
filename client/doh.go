@@ -1,42 +1,28 @@
 package client
 
 import (
-	"context"
 	"encoding/json"
 	"log"
-	"net"
 	"net/http"
-	"time"
+	"sync"
 
 	"github.com/miekg/dns"
 )
 
 ///
 
-var dohHttpClient = func() *http.Client {
-	dialer := &net.Dialer{
-		Resolver: &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				d := net.Dialer{
-					Timeout: 5000 * time.Millisecond,
-				}
-				return d.DialContext(ctx, "udp", "119.29.29.29:53")
-			},
-		},
-	}
-	customTransport := &http.Transport{
-		DialContext: func(ctx context.Context, network string, addr string) (net.Conn, error) {
-			return dialer.DialContext(ctx, network, addr)
-		},
-	}
-	return &http.Client{Transport: customTransport}
-}()
+var (
+	dohHttpClient  = new(http.Client)
+	dohClientCache = new(sync.Map)
+)
 
-func GenDoHClient(dohServer string) dnsClient {
-	// https://cloudflare-dns.com/dns-query
-	// https://doh.pub/dns-query
-	return func(name string, qtype uint16) []Answer {
+func GetDoHClient(dohServer string) dnsClient {
+	c, found := dohClientCache.Load(dohServer)
+	if found {
+		return c.(dnsClient)
+	}
+
+	cc := func(name string, qtype uint16) []Answer {
 		req, err := http.NewRequest("GET", dohServer, nil)
 		if err != nil {
 			log.Println(err)
@@ -67,6 +53,8 @@ func GenDoHClient(dohServer string) dnsClient {
 
 		return r.Answer
 	}
+	dohClientCache.Store(dohServer, cc)
+	return cc
 }
 
 ///

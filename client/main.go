@@ -13,6 +13,13 @@ type DNSClient struct {
 	cache sync.Map // MAP(domain+type) => dnsCached
 }
 
+///
+
+func (c *DNSClient) LoadConfig() {
+}
+
+///
+
 func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 	cacheKey := name + "|" + strconv.Itoa(int(qtype))
 

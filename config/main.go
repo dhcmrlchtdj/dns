@@ -5,7 +5,6 @@ package config
 func Read() {
 }
 
-
 ///
 
 type Config struct {
@@ -13,8 +12,6 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	DNSType   string   `json:"dns_type"`
-	DNSServer string   `json:"dns_server"`
-	Default   bool     `json:"default,omitempty"`
-	Domain    []string `json:"domain,omitempty"`
+	DNS    string   `json:"dns"`
+	Domain []string `json:"domain,omitempty"`
 }

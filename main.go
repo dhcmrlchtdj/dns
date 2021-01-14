@@ -6,11 +6,12 @@ import (
 	"github.com/miekg/dns"
 
 	"github.com/dhcmrlchtdj/shunt/client"
-	"github.com/dhcmrlchtdj/shunt/config"
 )
 
+var dnsClient = new(client.DNSClient)
+
 func main() {
-	config.Read()
+	dnsClient.LoadConfig()
 
 	dns.HandleFunc(".", handleRequest)
 
@@ -37,7 +38,7 @@ func handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 
 func Query(m *dns.Msg) {
 	for _, q := range m.Question {
-		answers := client.Query(q.Name, q.Qtype)
+		answers := dnsClient.Query(q.Name, q.Qtype)
 		for _, ans := range answers {
 			record := fmt.Sprintf("%s %d %s %s", ans.Name, ans.TTL, dns.Type(ans.Type).String(), ans.Data)
 			rr, err := dns.NewRR(record)
