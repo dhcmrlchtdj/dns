@@ -43,6 +43,7 @@ func rr2ans(rr dns.RR) Answer {
 	a.Name = hd.Name
 	a.Type = hd.Rrtype
 	a.TTL = int(hd.Ttl)
+	// TODO: how to extract Data from RR
 	a.Data = strings.TrimSpace(rr.String()[len(hd.String()):])
 	return a
 }

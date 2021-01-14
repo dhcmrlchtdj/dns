@@ -1,7 +1,7 @@
-- [ ] /etc/hosts
-- [ ] upstream: UDP
+- [ ] upstream: /etc/hosts
+- [x] upstream: UDP
 - [ ] upstream: TCP
 - [ ] upstream: DoT
-- [ ] upstream: DoH
-- [ ] cache
+- [x] upstream: DoH
+- [x] cache
 - [ ] config
