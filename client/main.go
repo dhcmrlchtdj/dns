@@ -18,8 +18,9 @@ import (
 type dnsClient func(string, uint16) []Answer
 
 type DNSClient struct {
-	cache  sync.Map // MAP("domain|type") => dnsCached
-	router dnsRouter
+	cache    sync.Map // MAP("domain|type") => dnsCached
+	router   dnsRouter
+	staticIp map[string]string
 }
 
 ///
@@ -33,6 +34,14 @@ func (c *DNSClient) Init(forwards []config.Server) {
 		}
 		var cli dnsClient
 		switch parsed.Scheme {
+		case "ip":
+			if c.staticIp == nil {
+				c.staticIp = make(map[string]string)
+			}
+			for _, domain := range forward.Domain {
+				c.staticIp[dns.Fqdn(domain)] = parsed.Host
+			}
+			continue
 		case "udp":
 			cli = GetUDPClient(parsed.Host)
 		case "doh":
@@ -52,8 +61,20 @@ func (c *DNSClient) Init(forwards []config.Server) {
 ///
 
 func (c *DNSClient) Query(name string, qtype uint16) []Answer {
-	cacheKey := name + "|" + strconv.Itoa(int(qtype))
 	log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("query")
+
+	name = dns.Fqdn(name)
+
+	// from staticIp
+	if qtype == dns.TypeA {
+		staticIp, found := c.staticIp[name]
+		if found {
+			log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIp hit")
+			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
+		}
+	}
+
+	cacheKey := name + "|" + strconv.Itoa(int(qtype))
 
 	// from cache
 	cached, found := c.cacheGet(cacheKey)
@@ -63,7 +84,7 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 	}
 
 	// by config
-	cli := c.router.route(dns.Fqdn(name))
+	cli := c.router.route(name)
 	if cli == nil {
 		log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
 		return nil
