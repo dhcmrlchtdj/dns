@@ -36,8 +36,12 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 }
 
 func (c *DNSClient) queryByConfig(name string, qtype uint16) []Answer {
+	cli := GetUDPClient("119.29.29.29:53")
+	// cli := GetDoHClient("https://doh.pub/dns-query")
+	x := cli(name, qtype)
+	return x
 	// TODO
-	return nil
+	// return nil
 }
 
 ///
@@ -52,7 +56,7 @@ func (c *DNSClient) cacheSet(key string, answer []Answer) {
 		return
 	}
 
-	ttl := time.Duration(answer[0].TTL) * time.Nanosecond
+	ttl := time.Duration(answer[0].TTL) * time.Second
 
 	val := dnsCached{
 		answer:  answer,

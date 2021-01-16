@@ -26,12 +26,12 @@ func GetUDPClient(udpServer string) dnsClient {
 			log.Println(err)
 			return nil
 		}
+
 		var ans []Answer
 		for _, rr := range in.Answer {
 			ans = append(ans, rr2ans(rr))
 		}
-
-		return nil
+		return ans
 	}
 	udpClientCache.Store(udpServer, cc)
 	return cc
