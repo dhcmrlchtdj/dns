@@ -31,8 +31,8 @@ func GetDoHClient(dohServer string) dnsClient {
 		q := req.URL.Query()
 		q.Set("name", name)                     // Query Name
 		q.Set("type", dns.Type(qtype).String()) // Query Type
-		q.Set("do", "false")                    // DO bit - set if client wants DNSSEC data
-		q.Set("cd", "false")                    // CD bit - set to disable validation
+		// q.Set("do", "true")                     // DO bit - set if client wants DNSSEC data
+		// q.Set("cd", "true")                     // CD bit - set to disable validation
 		req.URL.RawQuery = q.Encode()
 
 		resp, err := dohHttpClient.Do(req)
