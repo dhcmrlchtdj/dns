@@ -8,37 +8,42 @@ import (
 	"github.com/dhcmrlchtdj/shunt/client"
 )
 
-var dnsClient = new(client.DNSClient)
+type Shunt struct {
+	server dns.Server
+	client client.DNSClient
+}
 
 func main() {
-	dnsClient.LoadConfig()
+	s := Shunt{
+		server: dns.Server{Addr: ":1053", Net: "udp"},
+	}
+	s.client.LoadConfig()
 
-	dns.HandleFunc(".", handleRequest)
-
-	server := &dns.Server{Addr: ":1053", Net: "udp"}
 	fmt.Println("Starting at 1053")
-	err := server.ListenAndServe()
-	defer server.Shutdown()
+	err := s.server.ListenAndServe()
 	if err != nil {
 		panic(err)
 	}
+	defer s.server.Shutdown()
+
+	dns.HandleFunc(".", s.handleRequest)
 }
 
-func handleRequest(w dns.ResponseWriter, query *dns.Msg) {
+func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 	println("handle request")
 	m := new(dns.Msg)
 	m.SetReply(query)
 
 	if query.Opcode == dns.OpcodeQuery {
-		Query(m)
+		s.Query(m)
 	}
 
 	w.WriteMsg(m)
 }
 
-func Query(m *dns.Msg) {
+func (s *Shunt) Query(m *dns.Msg) {
 	for _, q := range m.Question {
-		answers := dnsClient.Query(q.Name, q.Qtype)
+		answers := s.client.Query(q.Name, q.Qtype)
 		for _, ans := range answers {
 			record := fmt.Sprintf("%s %d %s %s", ans.Name, ans.TTL, dns.Type(ans.Type).String(), ans.Data)
 			rr, err := dns.NewRR(record)

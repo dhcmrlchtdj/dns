@@ -3,5 +3,8 @@
 - [ ] upstream: TCP
 - [ ] upstream: DoT
 - [x] upstream: DoH
-- [x] cache
-- [ ] config
+- [x] downstream: UDP
+- [ ] feature: DNSSEC
+- [ ] internal: DNS flags
+- [x] internal: cache
+- [ ] internal: config
