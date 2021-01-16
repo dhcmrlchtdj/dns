@@ -7,4 +7,5 @@
 - [ ] feature: DNSSEC
 - [ ] internal: DNS flags
 - [x] internal: cache
-- [ ] internal: config
+- [x] internal: config
+- [ ] internal: cmd flags

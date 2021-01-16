@@ -2,25 +2,55 @@ package client
 
 import (
 	"math"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/miekg/dns"
+
+	"github.com/dhcmrlchtdj/shunt/config"
 )
 
 ///
 
+type dnsClient func(string, uint16) []Answer
+
 type DNSClient struct {
-	cache sync.Map // MAP(domain+type) => dnsCached
+	cache  sync.Map // MAP("domain|type") => dnsCached
+	router dnsRouter
 }
 
 ///
 
-func (c *DNSClient) LoadConfig() {
+func (c *DNSClient) Init(forwards []config.Server) {
+	for _, forward := range forwards {
+		parsed, err := url.Parse(forward.DNS)
+		if err != nil {
+			panic(err)
+		}
+		var cli dnsClient
+		switch parsed.Scheme {
+		case "udp":
+			cli = GetUDPClient(parsed.Host)
+		case "doh":
+			parsed.Scheme = "https"
+			cli = GetDoHClient(parsed.String())
+		default:
+			println("unsupported scheme") // TODO
+			continue
+		}
+
+		for _, domain := range forward.Domain {
+			c.router.add(dns.Fqdn(domain), cli)
+		}
+	}
 }
 
 ///
 
 func (c *DNSClient) Query(name string, qtype uint16) []Answer {
+	println("query..........", name)
 	cacheKey := name + "|" + strconv.Itoa(int(qtype))
 
 	// from cache
@@ -30,18 +60,14 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 	}
 
 	// by config
-	resp := c.queryByConfig(name, qtype)
-	c.cacheSet(cacheKey, resp)
-	return resp
-}
-
-func (c *DNSClient) queryByConfig(name string, qtype uint16) []Answer {
-	cli := GetUDPClient("119.29.29.29:53")
-	// cli := GetDoHClient("https://doh.pub/dns-query")
-	x := cli(name, qtype)
-	return x
-	// TODO
-	// return nil
+	println("query..........", name)
+	cli := c.router.route(dns.Fqdn(name))
+	if cli == nil {
+		return nil
+	}
+	ans := cli(name, qtype)
+	c.cacheSet(cacheKey, ans)
+	return ans
 }
 
 ///
@@ -103,4 +129,3 @@ type Answer struct {
 	// The value of the DNS record for the given name and type.
 	Data string `json:"data"`
 }
-type dnsClient func(string, uint16) []Answer

@@ -6,18 +6,27 @@ import (
 	"github.com/miekg/dns"
 
 	"github.com/dhcmrlchtdj/shunt/client"
+	"github.com/dhcmrlchtdj/shunt/config"
 )
 
 type Shunt struct {
+	config config.Config
 	server dns.Server
 	client client.DNSClient
 }
 
 func main() {
+	dnsMux := dns.NewServeMux()
 	s := Shunt{
-		server: dns.Server{Addr: ":1053", Net: "udp"},
+		server: dns.Server{
+			Addr:    ":1053",
+			Net:     "udp",
+			Handler: dnsMux,
+		},
 	}
-	s.client.LoadConfig()
+	dnsMux.HandleFunc(".", s.handleRequest)
+	s.config.Load("./config.json")
+	s.client.Init(s.config.Forward)
 
 	fmt.Println("Starting at 1053")
 	err := s.server.ListenAndServe()
@@ -25,8 +34,6 @@ func main() {
 		panic(err)
 	}
 	defer s.server.Shutdown()
-
-	dns.HandleFunc(".", s.handleRequest)
 }
 
 func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
