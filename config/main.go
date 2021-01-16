@@ -36,4 +36,8 @@ func (c *Config) Load(file string) {
 	if err := dec.Decode(c); err != nil {
 		panic(err)
 	}
+
+	if c.Port == 0 {
+		c.Port = 1053
+	}
 }

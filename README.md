@@ -4,6 +4,7 @@
 
 ```json
 {
+    "port": 1053,
     "logLevel": "info", // trace,debug,info,error
     "server": [
         { "dns": "file:///etc/hosts" },
