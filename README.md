@@ -4,6 +4,7 @@
 
 ```json
 {
+    "logLevel": "info", // trace,debug,info,error
     "server": [
         { "dns": "file:///etc/hosts" },
         { "dns": "ip://127.0.0.1", "domain": ["localhost"] },

@@ -1,14 +1,12 @@
 package client
 
 import (
-	"log"
 	"strings"
 	"sync"
 
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
-
-///
 
 var udpClientCache = new(sync.Map)
 
@@ -19,11 +17,12 @@ func GetUDPClient(udpServer string) dnsClient {
 	}
 
 	cc := func(name string, qtype uint16) []Answer {
+		log.Debug().Str("module", "client.udp").Str("server", udpServer).Str("domain", name).Uint16("type", qtype).Msg("query")
 		msg := new(dns.Msg)
 		msg.SetQuestion(name, qtype)
 		in, err := dns.Exchange(msg, udpServer)
 		if err != nil {
-			log.Println(err)
+			log.Error().Str("module", "client.udp").Err(err).Send()
 			return nil
 		}
 
@@ -33,6 +32,8 @@ func GetUDPClient(udpServer string) dnsClient {
 		}
 		return ans
 	}
+
+	log.Debug().Str("module", "client.udp").Str("server", udpServer).Msg("create UDP server")
 	udpClientCache.Store(udpServer, cc)
 	return cc
 }

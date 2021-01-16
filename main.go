@@ -2,33 +2,51 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dhcmrlchtdj/shunt/client"
 	"github.com/dhcmrlchtdj/shunt/config"
 )
 
 type Shunt struct {
-	config config.Config
 	server dns.Server
 	client client.DNSClient
 }
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	cfg := new(config.Config)
+	cfg.Load("./config.json")
+
+	switch cfg.LogLevel {
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	}
+
 	dnsMux := dns.NewServeMux()
 	s := Shunt{
 		server: dns.Server{
-			Addr:    ":1053",
+			Addr:    ":" + strconv.Itoa(cfg.Port),
 			Net:     "udp",
 			Handler: dnsMux,
 		},
 	}
 	dnsMux.HandleFunc(".", s.handleRequest)
-	s.config.Load("./config.json")
-	s.client.Init(s.config.Forward)
+	s.client.Init(cfg.Forward)
 
-	fmt.Println("Starting at 1053")
+	log.Info().Str("module", "main").Int("port", cfg.Port).Msg("Start DNS server")
 	err := s.server.ListenAndServe()
 	if err != nil {
 		panic(err)
@@ -37,7 +55,6 @@ func main() {
 }
 
 func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
-	println("handle request")
 	m := new(dns.Msg)
 	m.SetReply(query)
 

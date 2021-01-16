@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 
 	"github.com/dhcmrlchtdj/shunt/config"
 )
@@ -27,6 +28,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 	for _, forward := range forwards {
 		parsed, err := url.Parse(forward.DNS)
 		if err != nil {
+			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("invalid config")
 			panic(err)
 		}
 		var cli dnsClient
@@ -37,7 +39,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 			parsed.Scheme = "https"
 			cli = GetDoHClient(parsed.String())
 		default:
-			println("unsupported scheme") // TODO
+			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("unsupported scheme")
 			continue
 		}
 
@@ -50,19 +52,20 @@ func (c *DNSClient) Init(forwards []config.Server) {
 ///
 
 func (c *DNSClient) Query(name string, qtype uint16) []Answer {
-	println("query..........", name)
 	cacheKey := name + "|" + strconv.Itoa(int(qtype))
+	log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("query")
 
 	// from cache
 	cached, found := c.cacheGet(cacheKey)
 	if found {
+		log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("cache hit")
 		return cached
 	}
 
 	// by config
-	println("query..........", name)
 	cli := c.router.route(dns.Fqdn(name))
 	if cli == nil {
+		log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
 		return nil
 	}
 	ans := cli(name, qtype)
@@ -106,6 +109,7 @@ func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
 	elapsed := cached.expired.Sub(time.Now())
 	ttl := int(math.Ceil(elapsed.Seconds()))
 	if ttl <= 0 {
+		log.Trace().Str("module", "client.cache").Str("key", key).Msg("expired")
 		c.cache.Delete(key)
 		return nil, false
 	}

@@ -2,14 +2,12 @@ package client
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
-
-///
 
 var (
 	dohHttpClient  = new(http.Client)
@@ -23,9 +21,10 @@ func GetDoHClient(dohServer string) dnsClient {
 	}
 
 	cc := func(name string, qtype uint16) []Answer {
+		log.Debug().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Msg("query")
 		req, err := http.NewRequest("GET", dohServer, nil)
 		if err != nil {
-			log.Println(err)
+			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Err(err).Send()
 			return nil
 		}
 		req.Header.Set("accept", "application/dns-json")
@@ -38,14 +37,14 @@ func GetDoHClient(dohServer string) dnsClient {
 
 		resp, err := dohHttpClient.Do(req)
 		if err != nil {
-			log.Println(err)
+			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Err(err).Send()
 			return nil
 		}
 		defer resp.Body.Close()
 
 		var r dohResponse
 		if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-			log.Println(err)
+			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Err(err).Send()
 			return nil
 		}
 
@@ -53,6 +52,8 @@ func GetDoHClient(dohServer string) dnsClient {
 
 		return r.Answer
 	}
+
+	log.Debug().Str("module", "client.doh").Str("server", dohServer).Msg("create DOH server")
 	dohClientCache.Store(dohServer, cc)
 	return cc
 }

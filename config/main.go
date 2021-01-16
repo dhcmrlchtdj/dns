@@ -3,12 +3,16 @@ package config
 import (
 	"encoding/json"
 	"os"
+
+	"github.com/rs/zerolog/log"
 )
 
 ///
 
 type Config struct {
-	Forward []Server `json:"forward"`
+	Port     int      `json:"port,omitempty"`
+	LogLevel string   `json:"logLevel,omitempty"`
+	Forward  []Server `json:"forward"`
 }
 
 type Server struct {
@@ -19,6 +23,8 @@ type Server struct {
 ///
 
 func (c *Config) Load(file string) {
+	log.Info().Str("module", "config").Str("path", file).Msg("load config")
+
 	f, err := os.Open(file)
 	if err != nil {
 		panic(err)
