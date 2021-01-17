@@ -34,7 +34,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 		}
 		var cli dnsClient
 		switch parsed.Scheme {
-		case "ip":
+		case "ipv4":
 			if c.staticIp == nil {
 				c.staticIp = make(map[string]string)
 			}

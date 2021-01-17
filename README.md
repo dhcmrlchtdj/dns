@@ -8,7 +8,7 @@
     "logLevel": "info", // trace,debug,info,error
     "server": [
         { "dns": "file:///etc/hosts" },
-        { "dns": "ip://127.0.0.1", "domain": ["localhost"] },
+        { "dns": "ipv4://127.0.0.1", "domain": ["localhost"] },
         { "dns": "udp://1.1.1.1:53", "domain": ["cloudflare-dns.com", "doh.pub"] },
         { "dns": "tcp://1.1.1.1:53", "domain": [] },
         { "dns": "dot://1.1.1.1:853", "domain": [] },
