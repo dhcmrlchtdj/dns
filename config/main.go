@@ -27,6 +27,7 @@ func (c *Config) Load(file string) {
 
 	f, err := os.Open(file)
 	if err != nil {
+		log.Error().Str("module", "config").Str("path", file).Err(err).Send()
 		panic(err)
 	}
 	defer f.Close()
@@ -34,10 +35,7 @@ func (c *Config) Load(file string) {
 	dec := json.NewDecoder(f)
 	dec.UseNumber()
 	if err := dec.Decode(c); err != nil {
+		log.Error().Str("module", "config").Str("path", file).Err(err).Send()
 		panic(err)
-	}
-
-	if c.Port == 0 {
-		c.Port = 1053
 	}
 }

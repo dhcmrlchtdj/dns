@@ -106,11 +106,16 @@ func (c *DNSClient) cacheSet(key string, answer []Answer) {
 		return
 	}
 
-	ttl := time.Duration(answer[0].TTL) * time.Second
+	minTTL := answer[0].TTL
+	for _, ans := range answer {
+		if ans.TTL < minTTL {
+			minTTL = ans.TTL
+		}
+	}
 
 	val := dnsCached{
 		answer:  answer,
-		expired: time.Now().Add(ttl),
+		expired: time.Now().Add(time.Duration(minTTL) * time.Second),
 	}
 	c.cache.Store(key, &val)
 }

@@ -44,6 +44,8 @@ func main() {
 ///
 
 func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
+	log.Trace().Str("module", "main").Msg("handle request")
+
 	m := new(dns.Msg)
 	m.SetReply(query)
 
@@ -55,12 +57,15 @@ func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 }
 
 func (s *Shunt) Query(m *dns.Msg) {
+	log.Trace().Str("module", "main").Msg("query")
+
 	for _, q := range m.Question {
 		answers := s.client.Query(q.Name, q.Qtype)
 		for _, ans := range answers {
 			record := fmt.Sprintf("%s %d %s %s", ans.Name, ans.TTL, dns.Type(ans.Type).String(), ans.Data)
 			rr, err := dns.NewRR(record)
 			if err != nil {
+				log.Error().Str("module", "main").Str("record", record).Err(err).Send()
 				panic(err)
 			}
 			m.Answer = append(m.Answer, rr)
@@ -112,6 +117,6 @@ func string2level(s string) zerolog.Level {
 	case "error":
 		return zerolog.ErrorLevel
 	default:
-		panic("invalid log level")
+		panic("invalid log level: " + s)
 	}
 }
