@@ -47,6 +47,9 @@ func (c *DNSClient) Init(forwards []config.Server) {
 		case "doh":
 			parsed.Scheme = "https"
 			cli = GetDoHClient(parsed.String())
+		case "tcp","dot":
+			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("WIP")
+			continue
 		default:
 			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("unsupported scheme")
 			continue
