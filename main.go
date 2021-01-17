@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -19,21 +20,7 @@ type Shunt struct {
 }
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
-	cfg := new(config.Config)
-	cfg.Load("./config.json")
-
-	switch cfg.LogLevel {
-	case "trace":
-		zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	case "info":
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	}
+	cfg := initConfig()
 
 	dnsMux := dns.NewServeMux()
 	s := Shunt{
@@ -53,6 +40,8 @@ func main() {
 	}
 	defer s.server.Shutdown()
 }
+
+///
 
 func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 	m := new(dns.Msg)
@@ -76,5 +65,53 @@ func (s *Shunt) Query(m *dns.Msg) {
 			}
 			m.Answer = append(m.Answer, rr)
 		}
+	}
+}
+
+///
+
+func initConfig() *config.Config {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	port := flag.Int("port", 0, "DNS server port")
+	configFile := flag.String("conf", "", "Path to config file")
+	logLevel := flag.String("level", "", "log level")
+	flag.Parse()
+
+	cfg := new(config.Config)
+
+	if len(*configFile) > 0 {
+		cfg.Load(*configFile)
+	}
+
+	if *port != 0 {
+		cfg.Port = *port
+	}
+	if cfg.Port == 0 {
+		panic("'0' is not a valid port number")
+	}
+
+	if len(*logLevel) > 0 {
+		zerolog.SetGlobalLevel(string2level(*logLevel))
+	} else if len(cfg.LogLevel) > 0 {
+		zerolog.SetGlobalLevel(string2level(cfg.LogLevel))
+	}
+
+	return cfg
+}
+
+func string2level(s string) zerolog.Level {
+	switch s {
+	case "trace":
+		return zerolog.TraceLevel
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "error":
+		return zerolog.ErrorLevel
+	default:
+		panic("invalid log level")
 	}
 }
