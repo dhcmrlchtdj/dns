@@ -48,7 +48,10 @@ func GetDoHClient(dohServer string) dnsClient {
 			return nil
 		}
 
-		// TODO check r.Status
+		if r.Status != 0 {
+			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Int("status", r.Status).Send()
+			return nil
+		}
 
 		return r.Answer
 	}
