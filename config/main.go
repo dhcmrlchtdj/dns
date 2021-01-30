@@ -17,7 +17,7 @@ type Config struct {
 
 type Server struct {
 	DNS    string   `json:"dns"`
-	Domain []string `json:"domain,omitempty"`
+	Domain []string `json:"domain"`
 }
 
 ///
