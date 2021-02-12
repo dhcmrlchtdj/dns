@@ -79,9 +79,9 @@ func initConfig() *config.Config {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	port := flag.Int("port", 0, "DNS server port")
-	configFile := flag.String("conf", "", "Path to config file")
-	logLevel := flag.String("level", "", "log level")
+	port := flag.Int("port", 0, "DNS server port.")
+	configFile := flag.String("conf", "", "Path to config file.")
+	logLevel := flag.String("log_level", "", "Log level. trace, debug, info, error")
 	flag.Parse()
 
 	cfg := new(config.Config)
