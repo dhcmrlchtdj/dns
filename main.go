@@ -44,7 +44,7 @@ func main() {
 ///
 
 func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
-	log.Trace().Str("module", "main").Msg("handle request")
+	log.Debug().Str("module", "main").Msg("handle request")
 
 	m := new(dns.Msg)
 	m.SetReply(query)
@@ -57,7 +57,7 @@ func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 }
 
 func (s *Shunt) Query(m *dns.Msg) {
-	log.Trace().Str("module", "main").Msg("query")
+	log.Debug().Str("module", "main").Msg("query")
 
 	for _, q := range m.Question {
 		answers := s.client.Query(q.Name, q.Qtype)
@@ -81,7 +81,7 @@ func initConfig() *config.Config {
 
 	port := flag.Int("port", 0, "DNS server port.")
 	configFile := flag.String("conf", "", "Path to config file.")
-	logLevel := flag.String("log_level", "", "Log level. trace, debug, info, error")
+	logLevel := flag.String("log-level", "", "Log level. debug, info, error")
 	flag.Parse()
 
 	cfg := new(config.Config)
@@ -108,8 +108,6 @@ func initConfig() *config.Config {
 
 func string2level(s string) zerolog.Level {
 	switch s {
-	case "trace":
-		return zerolog.TraceLevel
 	case "debug":
 		return zerolog.DebugLevel
 	case "info":

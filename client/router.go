@@ -12,7 +12,7 @@ type dnsRouter struct {
 }
 
 func (c *dnsRouter) add(domain string, cli dnsClient) {
-	log.Trace().Str("module", "client.router").Str("domain", domain).Msg("add")
+	log.Debug().Str("module", "client.router").Str("domain", domain).Msg("add")
 
 	if domain == "." {
 		if c.matched == nil {
@@ -38,7 +38,7 @@ func (c *dnsRouter) add(domain string, cli dnsClient) {
 }
 
 func (c *dnsRouter) route(domain string) dnsClient {
-	log.Trace().Str("module", "client.router").Str("domain", domain).Msg("route")
+	log.Debug().Str("module", "client.router").Str("domain", domain).Msg("route")
 
 	if domain == "." {
 		return c.matched

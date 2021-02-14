@@ -7,7 +7,7 @@ DNS forwarder.
 ```
 $ go build
 $ ./shunt --help
-$ ./shunt --port=1053 --log-level=trace --conf=/path/to/config
+$ ./shunt --port=1053 --log-level=debug --conf=/path/to/config
 ```
 
 ## Install

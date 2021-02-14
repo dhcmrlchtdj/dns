@@ -138,7 +138,7 @@ func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
 	elapsed := cached.expired.Sub(time.Now())
 	ttl := int(math.Ceil(elapsed.Seconds()))
 	if ttl <= 0 {
-		log.Trace().Str("module", "client.cache").Str("key", key).Msg("expired")
+		log.Debug().Str("module", "client.cache").Str("key", key).Msg("expired")
 		c.cache.Delete(key)
 		return nil, false
 	}
