@@ -18,9 +18,10 @@ import (
 type dnsClient func(string, uint16) []Answer
 
 type DNSClient struct {
-	cache    sync.Map // MAP("domain|type") => dnsCached
-	router   dnsRouter
-	staticIp map[string]string
+	cache      sync.Map // MAP("domain|type") => dnsCached
+	router     dnsRouter
+	staticIpV4 map[string]string
+	staticIpV6 map[string]string
 }
 
 ///
@@ -35,11 +36,19 @@ func (c *DNSClient) Init(forwards []config.Server) {
 		var cli dnsClient
 		switch parsed.Scheme {
 		case "ipv4":
-			if c.staticIp == nil {
-				c.staticIp = make(map[string]string)
+			if c.staticIpV4 == nil {
+				c.staticIpV4 = make(map[string]string)
 			}
 			for _, domain := range forward.Domain {
-				c.staticIp[dns.Fqdn(domain)] = parsed.Host
+				c.staticIpV4[dns.Fqdn(domain)] = parsed.Host
+			}
+			continue
+		case "ipv6":
+			if c.staticIpV6 == nil {
+				c.staticIpV6 = make(map[string]string)
+			}
+			for _, domain := range forward.Domain {
+				c.staticIpV6[dns.Fqdn(domain)] = parsed.Host
 			}
 			continue
 		case "udp":
@@ -47,7 +56,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 		case "doh":
 			parsed.Scheme = "https"
 			cli = GetDoHClient(parsed.String(), forward.HttpsProxy)
-		case "tcp","dot":
+		case "tcp", "dot":
 			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("WIP")
 			continue
 		default:
@@ -70,9 +79,15 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 
 	// from staticIp
 	if qtype == dns.TypeA {
-		staticIp, found := c.staticIp[name]
+		staticIp, found := c.staticIpV4[name]
 		if found {
-			log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIp hit")
+			log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV4 hit")
+			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
+		}
+	} else if qtype == dns.TypeAAAA {
+		staticIp, found := c.staticIpV6[name]
+		if found {
+			log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV6 hit")
 			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
 		}
 	}
