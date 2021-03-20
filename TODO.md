@@ -1,10 +1,13 @@
 - [ ] upstream: /etc/hosts
+- [x] upstream: static IPv4
+- [ ] upstream: static IPv6
 - [x] upstream: UDP
 - [ ] upstream: TCP
 - [ ] upstream: DoT
 - [x] upstream: DoH
 - [x] downstream: UDP
 - [ ] feature: DNSSEC
+- [ ] feature: DoH over proxy
 - [ ] internal: DNS flags
 - [x] internal: cache
 - [x] internal: config

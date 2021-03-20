@@ -3,8 +3,16 @@
     "logLevel": "debug",
     "forward": [
         { "dns": "ipv4://127.0.0.1", "domain": ["localhost"] },
-        { "dns": "udp://1.1.1.1:53", "domain": ["cloudflare-dns.com", "doh.pub"] },
-        { "dns": "doh://cloudflare-dns.com/dns-query", "domain": ["."] },
+        { "dns": "ipv6://::1", "domain": ["localhost"] },
+        {
+            "dns": "udp://1.1.1.1:53",
+            "domain": ["cloudflare-dns.com", "doh.pub"]
+        },
+        {
+            "dns": "doh://cloudflare-dns.com/dns-query",
+            "https_proxy": "http://127.0.0.1:2080",
+            "domain": ["."]
+        },
         { "dns": "doh://doh.pub/dns-query", "domain": ["cn"] }
     ]
 }
