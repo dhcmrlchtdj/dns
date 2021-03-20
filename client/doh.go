@@ -18,25 +18,22 @@ func GetDoHClient(dohServer string, proxy string) dnsClient {
 		return c.(dnsClient)
 	}
 
-	var dohHttpClient *http.Client
+	dohHttpClient := new(http.Client)
 	if len(proxy) > 0 {
 		proxyUrl, err := url.Parse(proxy)
 		if err != nil {
 			panic(err)
 		}
-		dohHttpClient = &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyUrl),
-			},
+		dohHttpClient.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
 		}
-	} else {
-		dohHttpClient = new(http.Client)
 	}
 
 	cc := func(name string, qtype uint16) []Answer {
 		sublogger := log.With().
 			Str("module", "client.doh").
 			Str("server", dohServer).
+			Str("proxy", proxy).
 			Str("domain", name).
 			Uint16("type", qtype).
 			Logger()
