@@ -17,12 +17,20 @@ func GetUDPClient(udpServer string) dnsClient {
 	}
 
 	cc := func(name string, qtype uint16) []Answer {
-		log.Debug().Str("module", "client.udp").Str("server", udpServer).Str("domain", name).Uint16("type", qtype).Msg("query")
+		sublogger := log.With().
+			Str("module", "client.udp").
+			Str("server", udpServer).
+			Str("domain", name).
+			Uint16("type", qtype).
+			Logger()
+
+		sublogger.Debug().Msg("query")
+
 		msg := new(dns.Msg)
 		msg.SetQuestion(name, qtype)
 		in, err := dns.Exchange(msg, udpServer)
 		if err != nil {
-			log.Error().Str("module", "client.udp").Err(err).Send()
+			sublogger.Error().Err(err).Send()
 			return nil
 		}
 

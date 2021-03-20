@@ -46,7 +46,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 			cli = GetUDPClient(parsed.Host)
 		case "doh":
 			parsed.Scheme = "https"
-			cli = GetDoHClient(parsed.String())
+			cli = GetDoHClient(parsed.String(), forward.HttpsProxy)
 		case "tcp","dot":
 			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("WIP")
 			continue

@@ -53,7 +53,10 @@ func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 		s.Query(m)
 	}
 
-	w.WriteMsg(m)
+	err := w.WriteMsg(m)
+	if err != nil {
+		log.Debug().Str("module", "main").Err(err).Msg("handle request write")
+	}
 }
 
 func (s *Shunt) Query(m *dns.Msg) {

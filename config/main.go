@@ -17,6 +17,7 @@ type Config struct {
 
 type Server struct {
 	DNS    string   `json:"dns"`
+	HttpsProxy string `json:"https_proxy,omitempty"`
 	Domain []string `json:"domain"`
 }
 

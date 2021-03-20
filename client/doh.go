@@ -3,28 +3,49 @@ package client
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"sync"
 
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	dohHttpClient  = new(http.Client)
-	dohClientCache = new(sync.Map)
-)
+var dohClientCache = new(sync.Map)
 
-func GetDoHClient(dohServer string) dnsClient {
+func GetDoHClient(dohServer string, proxy string) dnsClient {
 	c, found := dohClientCache.Load(dohServer)
 	if found {
 		return c.(dnsClient)
 	}
 
+	var dohHttpClient *http.Client
+	if len(proxy) > 0 {
+		proxyUrl, err := url.Parse(proxy)
+		if err != nil {
+			panic(err)
+		}
+		dohHttpClient = &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(proxyUrl),
+			},
+		}
+	} else {
+		dohHttpClient = new(http.Client)
+	}
+
 	cc := func(name string, qtype uint16) []Answer {
-		log.Debug().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Msg("query")
+		sublogger := log.With().
+			Str("module", "client.doh").
+			Str("server", dohServer).
+			Str("domain", name).
+			Uint16("type", qtype).
+			Logger()
+
+		sublogger.Debug().Msg("query")
+
 		req, err := http.NewRequest("GET", dohServer, nil)
 		if err != nil {
-			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Err(err).Send()
+			sublogger.Error().Err(err).Send()
 			return nil
 		}
 		req.Header.Set("accept", "application/dns-json")
@@ -37,19 +58,19 @@ func GetDoHClient(dohServer string) dnsClient {
 
 		resp, err := dohHttpClient.Do(req)
 		if err != nil {
-			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Err(err).Send()
+			sublogger.Error().Err(err).Send()
 			return nil
 		}
 		defer resp.Body.Close()
 
 		var r dohResponse
 		if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Err(err).Send()
+			sublogger.Error().Err(err).Send()
 			return nil
 		}
 
 		if r.Status != 0 {
-			log.Error().Str("module", "client.doh").Str("server", dohServer).Str("domain", name).Uint16("type", qtype).Int("status", r.Status).Send()
+			sublogger.Error().Int("status", r.Status).Send()
 			return nil
 		}
 

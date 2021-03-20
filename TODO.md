@@ -7,7 +7,7 @@
 - [x] upstream: DoH
 - [x] downstream: UDP
 - [ ] feature: DNSSEC
-- [ ] feature: DoH over proxy
+- [x] feature: DoH over proxy
 - [ ] internal: DNS flags
 - [x] internal: cache
 - [x] internal: config
