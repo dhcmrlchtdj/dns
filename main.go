@@ -10,11 +10,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dhcmrlchtdj/shunt/client"
-	"github.com/dhcmrlchtdj/shunt/config"
+	"github.com/dhcmrlchtdj/dns/client"
+	"github.com/dhcmrlchtdj/dns/config"
 )
 
-type Shunt struct {
+type Dns struct {
 	server dns.Server
 	client client.DNSClient
 }
@@ -23,7 +23,7 @@ func main() {
 	cfg := initConfig()
 
 	dnsMux := dns.NewServeMux()
-	s := Shunt{
+	s := Dns{
 		server: dns.Server{
 			Addr:    ":" + strconv.Itoa(cfg.Port),
 			Net:     "udp",
@@ -43,7 +43,7 @@ func main() {
 
 ///
 
-func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
+func (s *Dns) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 	log.Debug().Str("module", "main").Msg("handle request")
 
 	m := new(dns.Msg)
@@ -59,7 +59,7 @@ func (s *Shunt) handleRequest(w dns.ResponseWriter, query *dns.Msg) {
 	}
 }
 
-func (s *Shunt) Query(m *dns.Msg) {
+func (s *Dns) Query(m *dns.Msg) {
 	log.Debug().Str("module", "main").Msg("query")
 
 	for _, q := range m.Question {

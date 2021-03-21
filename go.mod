@@ -1,4 +1,4 @@
-module github.com/dhcmrlchtdj/shunt
+module github.com/dhcmrlchtdj/dns
 
 go 1.15
 

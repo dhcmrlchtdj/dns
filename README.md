@@ -1,18 +1,16 @@
-# shunt
-
-DNS forwarder.
+# DNS forwarder
 
 ## Example
 
 ```
 $ go build
-$ ./shunt --help
-$ ./shunt --port=1053 --log-level=debug --conf=/path/to/config
+$ ./dns --help
+$ ./dns --port=1053 --log-level=debug --conf=/path/to/config
 ```
 
-## Install
+## Usage
 
-- `brew install --HEAD dhcmrlchtdj/custom-tap/shunt`
+- `brew install --HEAD dhcmrlchtdj/custom-tap/dns`, `brew services start dns`
 
 ## Config
 
@@ -31,14 +29,12 @@ $ ./shunt --port=1053 --log-level=debug --conf=/path/to/config
 
 ### generate domain list
 
-```
+```sh
 $ curl -L 'https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf' \
     -o accelerated-domains.china.conf
-$ gsed -e 's|^server=/\(.*\)/114.114.114.114$$|\1|' \
-    accelerated-domains.china.conf \
+$ cat accelerated-domains.china.conf \
+    | sed -e 's|^server=/\(.*\)/114.114.114.114$|\1|' \
     | egrep -v '^#' \
-    > accelerated-domains.china.raw.txt
-$ gsed -e 's|\(.*\)|"\1",|' \
-    accelerated-domains.china.raw.txt \
-    > shunt.conf
+    | sed -e 's|\(.*\)|"\1",|' \
+    > dns.conf
 ```
