@@ -13,7 +13,8 @@ import (
 var dohClientCache = new(sync.Map)
 
 func GetDoHClient(dohServer string, proxy string) dnsClient {
-	c, found := dohClientCache.Load(dohServer)
+	serverKey := dohServer + "-" + proxy
+	c, found := dohClientCache.Load(serverKey)
 	if found {
 		return c.(dnsClient)
 	}
@@ -75,7 +76,7 @@ func GetDoHClient(dohServer string, proxy string) dnsClient {
 	}
 
 	log.Debug().Str("module", "client.doh").Str("server", dohServer).Msg("create DOH server")
-	dohClientCache.Store(dohServer, cc)
+	dohClientCache.Store(serverKey, cc)
 	return cc
 }
 
