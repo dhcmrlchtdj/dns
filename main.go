@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 
@@ -25,7 +26,7 @@ func main() {
 	dnsMux := dns.NewServeMux()
 	s := Dns{
 		server: dns.Server{
-			Addr:    ":" + strconv.Itoa(cfg.Port),
+			Addr:    net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
 			Net:     "udp",
 			Handler: dnsMux,
 		},
@@ -33,7 +34,7 @@ func main() {
 	dnsMux.HandleFunc(".", s.handleRequest)
 	s.client.Init(cfg.Forward)
 
-	log.Info().Str("module", "main").Int("port", cfg.Port).Msg("Start DNS server")
+	log.Info().Str("module", "main").Str("host", cfg.Host).Int("port", cfg.Port).Msg("Start DNS server")
 	err := s.server.ListenAndServe()
 	if err != nil {
 		panic(err)
@@ -82,6 +83,7 @@ func initConfig() *config.Config {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
+	host := flag.String("host", "localhost", "DNS server host")
 	port := flag.Int("port", 0, "DNS server port.")
 	configFile := flag.String("conf", "", "Path to config file.")
 	logLevel := flag.String("log-level", "", "Log level. debug, info, error")
@@ -91,6 +93,13 @@ func initConfig() *config.Config {
 
 	if len(*configFile) > 0 {
 		cfg.Load(*configFile)
+	}
+
+	if *host != "" {
+		cfg.Host = *host
+	}
+	if cfg.Host == "" {
+		cfg.Host = "localhost"
 	}
 
 	if *port != 0 {

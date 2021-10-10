@@ -1,4 +1,5 @@
 {
+    "host": "localhost",
     "port": 1053,
     "logLevel": "debug",
     "forward": [

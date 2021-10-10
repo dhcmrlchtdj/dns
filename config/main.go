@@ -10,15 +10,16 @@ import (
 ///
 
 type Config struct {
+	Host     string   `json:"host,omitempty"`
 	Port     int      `json:"port,omitempty"`
 	LogLevel string   `json:"logLevel,omitempty"`
 	Forward  []Server `json:"forward"`
 }
 
 type Server struct {
-	DNS    string   `json:"dns"`
-	HttpsProxy string `json:"https_proxy,omitempty"`
-	Domain []string `json:"domain"`
+	DNS        string   `json:"dns"`
+	HttpsProxy string   `json:"https_proxy,omitempty"`
+	Domain     []string `json:"domain"`
 }
 
 ///
