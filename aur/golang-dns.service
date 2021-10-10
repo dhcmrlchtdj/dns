@@ -1,0 +1,11 @@
+[Unit]
+Description=A DNS forwarder in Go.
+After=network.target
+
+[Service]
+Type=exec
+Restart=on-abort
+ExecStart=/usr/bin/golang-dns -conf /etc/golang-dns/config.json
+
+[Install]
+WantedBy=default.target

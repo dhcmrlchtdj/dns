@@ -1,0 +1,32 @@
+pkgname=golang-dns
+pkgver=0.0.1
+pkgrel=1
+pkgdesc='A DNS forwarder in Go'
+arch=('any')
+url="https://github.com/dhcmrlchtdj/dns"
+license=('AGPL')
+makedepends=('go' 'git')
+source=("config.json.example"
+        "golang-dns.service"
+        "$pkgname::git+https://github.com/dhcmrlchtdj/dns.git")
+sha256sums=('d60b1a9d38f220921005d3bd93c3abcb7df26e94d8aafd6138e3656ef5b7d1a1'
+            '0f0c5f55ea095c04b38b211721dfe53aae96f35bc21c27277b2ee2996a0842d3'
+            'SKIP')
+
+prepare(){
+  cd "${pkgname}"
+  mkdir -p build/
+}
+
+build() {
+  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
+  cd "${pkgname}"
+  go build -o build .
+}
+
+package() {
+  cd "${pkgname}"
+  install -Dm755 "build/dns" "${pkgdir}/usr/bin/${pkgname}"
+  install -Dm644 "${srcdir}/golang-dns.service" "${pkgdir}/usr/lib/systemd/system/golang-dns.service"
+  install -Dm644 "${srcdir}/config.json.example" "${pkgdir}/etc/golang-dns/config.json.example"
+}

@@ -1,0 +1,8 @@
+{
+    "port": 1053,
+    "logLevel": "debug",
+    "forward": [
+        { "dns": "ipv4://127.0.0.1", "domain": ["localhost"] },
+        { "dns": "doh://1.1.1.1/dns-query", "domain": ["."] }
+    ]
+}
