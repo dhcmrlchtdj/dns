@@ -9,7 +9,7 @@ makedepends=('go' 'git')
 source=("config.json.example"
         "golang-dns.service"
         "$pkgname::git+https://github.com/dhcmrlchtdj/dns.git")
-sha256sums=('d60b1a9d38f220921005d3bd93c3abcb7df26e94d8aafd6138e3656ef5b7d1a1'
+sha256sums=('0a48ceb6576a14e641b5697582c1048575e1849e290ec512500929db20a241d8'
             '0f0c5f55ea095c04b38b211721dfe53aae96f35bc21c27277b2ee2996a0842d3'
             'SKIP')
 
