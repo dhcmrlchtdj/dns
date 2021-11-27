@@ -15,13 +15,16 @@ $ ./godns --port=1053 --log-level=debug --conf=/path/to/config
 ### arch
 ```
 $ git clone
-$ cd aur && makepkg -src
+$ cd aur && makepkg -srci
+$ cp /etc/godns/config.json.example /etc/godns/config.json
+$ systemctl enable --now godns.service
 ```
 
 ### mac
 ```
 $ brew tap dhcmrlchtdj/godns https://github.com/dhcmrlchtdj/godns
 $ brew install --HEAD dhcmrlchtdj/godns/godns
+$ cp "$(brew --prefix)/etc/godns/config.json.example" "$(brew --prefix)/etc/godns/config.json"
 $ brew services start godns
 ```
 
