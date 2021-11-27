@@ -8,6 +8,7 @@ class Godns < Formula
 
   def install
     system "go", "build", *std_go_args
+    (etc/"godns").mkpath
     etc.install "aur/config.json.example" => "godns/config.json.example"
   end
 
