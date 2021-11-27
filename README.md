@@ -20,6 +20,7 @@ $ cd aur && makepkg -src
 
 ### mac
 ```
+$ brew tap dhcmrlchtdj/godns https://github.com/dhcmrlchtdj/godns
 $ brew install --HEAD dhcmrlchtdj/godns/godns
 $ brew services start godns
 ```

@@ -1,4 +1,4 @@
-class GoDNS < Formula
+class Godns < Formula
   desc "DNS with china list"
   homepage "https://github.com/dhcmrlchtdj/godns"
   head "https://github.com/dhcmrlchtdj/godns.git", branch: "main"
