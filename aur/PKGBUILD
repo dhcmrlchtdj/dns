@@ -6,27 +6,35 @@ arch=('any')
 url="https://github.com/dhcmrlchtdj/godns"
 license=('AGPL')
 makedepends=('go' 'git')
-source=("config.json.example"
-        "godns.service"
-        "$pkgname::git+https://github.com/dhcmrlchtdj/godns.git")
-sha256sums=('0a48ceb6576a14e641b5697582c1048575e1849e290ec512500929db20a241d8'
-            '0f0c5f55ea095c04b38b211721dfe53aae96f35bc21c27277b2ee2996a0842d3'
-            'SKIP')
+source=(
+    "config.json.example"
+    "godns.service"
+    "$pkgname::git+https://github.com/dhcmrlchtdj/godns.git"
+)
+sha256sums=(
+    '0a48ceb6576a14e641b5697582c1048575e1849e290ec512500929db20a241d8'
+    '0f0c5f55ea095c04b38b211721dfe53aae96f35bc21c27277b2ee2996a0842d3'
+    'SKIP'
+)
 
 prepare(){
-  cd "${pkgname}"
-  mkdir -p build/
+    cd "${pkgname}"
+    mkdir -p build/
 }
 
 build() {
-  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
-  cd "${pkgname}"
-  go build -o build .
+    cd "${pkgname}"
+    export CGO_CPPFLAGS="${CPPFLAGS}"
+    export CGO_CFLAGS="${CFLAGS}"
+    export CGO_CXXFLAGS="${CXXFLAGS}"
+    export CGO_LDFLAGS="${LDFLAGS}"
+    export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
+    go build -o build .
 }
 
 package() {
-  cd "${pkgname}"
-  install -Dm755 "build/godns" "${pkgdir}/usr/bin/${pkgname}"
-  install -Dm644 "${srcdir}/godns.service" "${pkgdir}/usr/lib/systemd/system/godns.service"
-  install -Dm644 "${srcdir}/config.json.example" "${pkgdir}/etc/godns/config.json.example"
+    cd "${pkgname}"
+    install -Dm755 "build/godns" "${pkgdir}/usr/bin/${pkgname}"
+    install -Dm644 "${srcdir}/godns.service" "${pkgdir}/usr/lib/systemd/system/godns.service"
+    install -Dm644 "${srcdir}/config.json.example" "${pkgdir}/etc/godns/config.json.example"
 }

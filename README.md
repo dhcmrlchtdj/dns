@@ -12,7 +12,17 @@ $ ./godns --port=1053 --log-level=debug --conf=/path/to/config
 
 ## Usage
 
-- `brew install --HEAD dhcmrlchtdj/custom-tap/godns`, `brew services start godns`
+### arch
+```
+$ git clone
+$ cd aur && makepkg -src
+```
+
+### mac
+```
+$ brew install --HEAD dhcmrlchtdj/godns/godns
+$ brew services start godns
+```
 
 ## Config
 
