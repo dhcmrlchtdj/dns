@@ -1,14 +1,14 @@
-pkgname=golang-dns
+pkgname=godns
 pkgver=0.0.1
 pkgrel=1
-pkgdesc='A DNS forwarder in Go'
+pkgdesc='DNS with china list'
 arch=('any')
-url="https://github.com/dhcmrlchtdj/dns"
+url="https://github.com/dhcmrlchtdj/godns"
 license=('AGPL')
 makedepends=('go' 'git')
 source=("config.json.example"
-        "golang-dns.service"
-        "$pkgname::git+https://github.com/dhcmrlchtdj/dns.git")
+        "godns.service"
+        "$pkgname::git+https://github.com/dhcmrlchtdj/godns.git")
 sha256sums=('0a48ceb6576a14e641b5697582c1048575e1849e290ec512500929db20a241d8'
             '0f0c5f55ea095c04b38b211721dfe53aae96f35bc21c27277b2ee2996a0842d3'
             'SKIP')
@@ -26,7 +26,7 @@ build() {
 
 package() {
   cd "${pkgname}"
-  install -Dm755 "build/dns" "${pkgdir}/usr/bin/${pkgname}"
-  install -Dm644 "${srcdir}/golang-dns.service" "${pkgdir}/usr/lib/systemd/system/golang-dns.service"
-  install -Dm644 "${srcdir}/config.json.example" "${pkgdir}/etc/golang-dns/config.json.example"
+  install -Dm755 "build/godns" "${pkgdir}/usr/bin/${pkgname}"
+  install -Dm644 "${srcdir}/godns.service" "${pkgdir}/usr/lib/systemd/system/godns.service"
+  install -Dm644 "${srcdir}/config.json.example" "${pkgdir}/etc/godns/config.json.example"
 }

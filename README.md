@@ -1,16 +1,18 @@
-# DNS forwarder
+# GoDNS
+
+DNS with china list
 
 ## Example
 
 ```
 $ go build
-$ ./dns --help
-$ ./dns --port=1053 --log-level=debug --conf=/path/to/config
+$ ./godns --help
+$ ./godns --port=1053 --log-level=debug --conf=/path/to/config
 ```
 
 ## Usage
 
-- `brew install --HEAD dhcmrlchtdj/custom-tap/dns`, `brew services start dns`
+- `brew install --HEAD dhcmrlchtdj/custom-tap/godns`, `brew services start godns`
 
 ## Config
 

@@ -10,7 +10,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dhcmrlchtdj/dns/config"
+	"github.com/dhcmrlchtdj/godns/config"
 )
 
 ///

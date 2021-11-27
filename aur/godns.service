@@ -1,11 +1,11 @@
 [Unit]
-Description=A DNS forwarder in Go.
+Description=DNS with china list
 After=network.target
 
 [Service]
 Type=exec
 Restart=on-abort
-ExecStart=/usr/bin/golang-dns -conf /etc/golang-dns/config.json
+ExecStart=/usr/bin/godns -conf /etc/godns/config.json
 
 [Install]
 WantedBy=default.target

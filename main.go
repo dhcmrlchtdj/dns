@@ -11,8 +11,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/dhcmrlchtdj/dns/client"
-	"github.com/dhcmrlchtdj/dns/config"
+	"github.com/dhcmrlchtdj/godns/client"
+	"github.com/dhcmrlchtdj/godns/config"
 )
 
 type Dns struct {

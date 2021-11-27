@@ -1,4 +1,4 @@
-module github.com/dhcmrlchtdj/dns
+module github.com/dhcmrlchtdj/godns
 
 go 1.15
 
