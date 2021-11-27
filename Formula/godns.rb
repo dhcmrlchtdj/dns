@@ -1,12 +1,14 @@
 class Godns < Formula
   desc "DNS with china list"
   homepage "https://github.com/dhcmrlchtdj/godns"
+  license "AGPL-3.0-or-later"
   head "https://github.com/dhcmrlchtdj/godns.git", branch: "main"
 
   depends_on "go" => :build
 
   def install
     system "go", "build", *std_go_args
+    etc.install "aur/config.json.example" => "godns/config.json.example"
   end
 
   plist_options manual: "#{HOMEBREW_PREFIX}/opt/dns/bin/godns"
