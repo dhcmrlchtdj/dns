@@ -12,33 +12,11 @@ class Godns < Formula
     etc.install "aur/config.json.example" => "godns/config.json.example"
   end
 
-  plist_options manual: "#{HOMEBREW_PREFIX}/opt/dns/bin/godns"
-
-  def plist
-    <<~EOS
-      <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-      <plist version="1.0">
-        <dict>
-          <key>Label</key>
-          <string>#{plist_name}</string>
-          <key>ProgramArguments</key>
-            <array>
-                <string>#{opt_bin}/godns</string>
-                <string>-conf</string>
-                <string>#{etc}/godns/config.json</string>
-            </array>
-            <key>RunAtLoad</key>
-            <true/>
-            <key>KeepAlive</key>
-            <true/>
-            <key>StandardOutPath</key>
-            <string>#{var}/log/godns.log</string>
-            <key>StandardErrorPath</key>
-            <string>#{var}/log/godns.log</string>
-          </dict>
-      </plist>
-    EOS
+  service do
+    run [opt_bin/"godns", "-conf", etc/"godns/config.json"]
+    keep_alive true
+    log_path var/"log/godns.log"
+    error_log_path var/"log/godns.log"
   end
 
   test do
