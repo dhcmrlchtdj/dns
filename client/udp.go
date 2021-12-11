@@ -11,7 +11,7 @@ import (
 var udpClientCache = new(sync.Map)
 
 func GetUDPClient(udpServer string) dnsClient {
-	c, found := dohClientCache.Load(udpServer)
+	c, found := udpClientCache.Load(udpServer)
 	if found {
 		return c.(dnsClient)
 	}
