@@ -1,18 +1,19 @@
 pkgname=godns
 pkgver=0.0.1
-pkgrel=1
-pkgdesc='DNS with china list'
+pkgrel=2
+pkgdesc='DNS server'
 arch=('any')
 url="https://github.com/dhcmrlchtdj/godns"
 license=('AGPL-3.0-or-later')
 makedepends=('go' 'git')
+backup=(etc/godns/config.json)
 source=(
-    "config.json.example"
+    "config.json"
     "godns.service"
     "$pkgname::git+https://github.com/dhcmrlchtdj/godns.git"
 )
 sha256sums=(
-    '0a48ceb6576a14e641b5697582c1048575e1849e290ec512500929db20a241d8'
+    '3faa9d81024a1f283a07a7b0cc3142b82a85cb64b1264ce7751eca3430d3eeaf'
     'b9691eb247cbe422cccbc04d6304564ec5038affcdb2f598e357d363f05b72a7'
     'SKIP'
 )

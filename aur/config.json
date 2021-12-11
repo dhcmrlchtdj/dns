@@ -1,0 +1,15 @@
+{
+    "host": "localhost",
+    "port": 1053,
+    "logLevel": "info",
+    "forward": [
+        {
+            "dns": "ipv4://127.0.0.1",
+            "domain": ["localhost"]
+        },
+        {
+            "dns": "udp://1.1.1.1:53",
+            "domain": ["."]
+        }
+    ]
+}

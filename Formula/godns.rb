@@ -1,5 +1,5 @@
 class Godns < Formula
-  desc "DNS with china list"
+  desc "DNS server"
   homepage "https://github.com/dhcmrlchtdj/godns"
   license "AGPL-3.0-or-later"
   head "https://github.com/dhcmrlchtdj/godns.git", branch: "main"
@@ -9,7 +9,7 @@ class Godns < Formula
   def install
     system "go", "build", *std_go_args
     (etc/"godns").mkpath
-    etc.install "aur/config.json.example" => "godns/config.json.example"
+    etc.install "aur/config.json" => "godns/config.json"
   end
 
   service do
