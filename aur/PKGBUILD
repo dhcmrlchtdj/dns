@@ -37,5 +37,5 @@ package() {
     cd "${pkgname}"
     install -Dm755 "build/godns" "${pkgdir}/usr/bin/${pkgname}"
     install -Dm644 "${srcdir}/godns.service" "${pkgdir}/usr/lib/systemd/system/godns.service"
-    install -Dm644 "${srcdir}/config.json.example" "${pkgdir}/etc/godns/config.json.example"
+    install -Dm644 "${srcdir}/config.json" "${pkgdir}/etc/godns/config.json"
 }
