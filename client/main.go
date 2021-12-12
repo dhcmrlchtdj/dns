@@ -1,11 +1,9 @@
 package client
 
 import (
-	"math"
 	"net/url"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
@@ -28,6 +26,7 @@ type DNSClient struct {
 
 func (c *DNSClient) Init(forwards []config.Server) {
 	for _, forward := range forwards {
+
 		parsed, err := url.Parse(forward.DNS)
 		if err != nil {
 			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("invalid config")
@@ -59,6 +58,13 @@ func (c *DNSClient) Init(forwards []config.Server) {
 		case "tcp", "dot":
 			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("WIP")
 			continue
+		case "block":
+			if parsed.Hostname() == "nodata" {
+				cli = GetBlockNoDataClient()
+			} else {
+				log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("WIP")
+				continue
+			}
 		default:
 			log.Error().Str("module", "client").Str("dns", forward.DNS).Msg("unsupported scheme")
 			continue
@@ -103,66 +109,15 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 
 	// by config
 	cli := c.router.route(name)
-	if cli == nil {
-		log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
-		return nil
-	}
-	ans := cli(name, qtype)
-	c.cacheSet(cacheKey, ans)
-	return ans
-}
-
-///
-
-type dnsCached struct {
-	answer  []Answer
-	expired time.Time
-}
-
-func (c *DNSClient) cacheSet(key string, answer []Answer) {
-	if len(answer) == 0 {
-		return
+	if cli != nil {
+		ans := cli(name, qtype)
+		c.cacheSet(cacheKey, ans)
+		return ans
 	}
 
-	minTTL := answer[0].TTL
-	for _, ans := range answer {
-		if ans.TTL < minTTL {
-			minTTL = ans.TTL
-		}
-	}
-
-	val := dnsCached{
-		answer:  answer,
-		expired: time.Now().Add(time.Duration(minTTL) * time.Second),
-	}
-	c.cache.Store(key, &val)
-}
-
-func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
-	val, found := c.cache.Load(key)
-	if !found {
-		return nil, false
-	}
-
-	cached, ok := val.(*dnsCached)
-	if !ok {
-		c.cache.Delete(key)
-		return nil, false
-	}
-
-	elapsed := cached.expired.Sub(time.Now())
-	ttl := int(math.Ceil(elapsed.Seconds()))
-	if ttl <= 0 {
-		log.Debug().Str("module", "client.cache").Str("key", key).Msg("expired")
-		c.cache.Delete(key)
-		return nil, false
-	}
-
-	for idx := range cached.answer {
-		cached.answer[idx].TTL = ttl
-	}
-
-	return cached.answer, true
+	// not found
+	log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
+	return nil
 }
 
 ///
