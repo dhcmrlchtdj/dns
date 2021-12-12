@@ -1,6 +1,7 @@
 - [ ] upstream: /etc/hosts
 - [x] upstream: static IPv4
 - [x] upstream: static IPv6
+- [ ] upstream: nxdomain
 - [x] upstream: UDP
 - [ ] upstream: TCP
 - [ ] upstream: DoT
