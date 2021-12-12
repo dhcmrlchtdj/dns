@@ -41,7 +41,7 @@ func GetDoHClient(dohServer string, proxy string) dnsClient {
 
 		sublogger.Debug().Msg("query")
 
-		req, err := http.NewRequest("GET", dohServer, nil)
+		req, err := http.NewRequest("GET", dohServer, http.NoBody)
 		if err != nil {
 			sublogger.Error().Err(err).Send()
 			return nil
