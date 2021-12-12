@@ -43,14 +43,9 @@ $ brew services start godns
 }
 ```
 
-### generate domain list
+### generate accelerated-domains.china.conf
 
 ```sh
-$ curl -L 'https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf' \
-    -o accelerated-domains.china.conf
-$ cat accelerated-domains.china.conf \
-    | sed -e 's|^server=/\(.*\)/114.114.114.114$|\1|' \
-    | egrep -v '^#' \
-    | sed -e 's|\(.*\)|"\1",|' \
-    > dns.conf
+$ curl -LO 'https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+$ grep -v '^#' accelerated-domains.china.conf | sed -e 's|^server=/\(.*\)/114.114.114.114$|"\1",|'
 ```
