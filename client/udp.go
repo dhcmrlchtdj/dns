@@ -24,7 +24,7 @@ func GetUDPClient(udpServer string) dnsClient {
 			Uint16("type", qtype).
 			Logger()
 
-		sublogger.Debug().Msg("query")
+		sublogger.Info().Msg("query")
 
 		msg := new(dns.Msg)
 		msg.SetQuestion(name, qtype)

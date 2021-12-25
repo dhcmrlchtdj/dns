@@ -12,7 +12,7 @@ func nodata(name string, qtype uint16) []Answer {
 		Uint16("type", qtype).
 		Logger()
 
-	sublogger.Debug().Msg("query")
+	sublogger.Info().Msg("query")
 
 	return nil
 }

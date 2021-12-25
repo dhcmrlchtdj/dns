@@ -87,13 +87,13 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 	if qtype == dns.TypeA {
 		staticIp, found := c.staticIpV4[name]
 		if found {
-			log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV4 hit")
+			log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV4 hit")
 			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
 		}
 	} else if qtype == dns.TypeAAAA {
 		staticIp, found := c.staticIpV6[name]
 		if found {
-			log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV6 hit")
+			log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV6 hit")
 			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
 		}
 	}
@@ -116,7 +116,7 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 	}
 
 	// not found
-	log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
+	log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
 	return nil
 }
 
