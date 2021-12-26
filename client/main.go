@@ -79,7 +79,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 ///
 
 func (c *DNSClient) Query(name string, qtype uint16) []Answer {
-	log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("query")
+	log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("query")
 
 	name = dns.Fqdn(name)
 
