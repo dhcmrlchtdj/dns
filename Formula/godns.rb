@@ -4,16 +4,16 @@ class Godns < Formula
   license "AGPL-3.0-or-later"
   head "https://github.com/dhcmrlchtdj/godns.git", branch: "main"
 
-  depends_on "go" => :build
+  depends_on "rust" => :build
 
   def install
-    system "go", "build", *std_go_args
+    system "cargo", "install", "--all-features", *std_cargo_args
     (etc/"godns").mkpath
     etc.install "aur/config.json" => "godns/config.json"
   end
 
   service do
-    run [opt_bin/"godns", "-conf", etc/"godns/config.json"]
+    run [opt_bin/"godns", "--conf", etc/"godns/config.json"]
     keep_alive true
     log_path var/"log/godns.log"
     error_log_path var/"log/godns.log"

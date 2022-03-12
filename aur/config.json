@@ -1,15 +1,26 @@
 {
-    "host": "localhost",
+    "host": "127.0.0.1",
     "port": 1053,
-    "logLevel": "info",
-    "forward": [
+    "log_level": "debug",
+    "rule": [
         {
-            "dns": "ipv4://127.0.0.1",
-            "domain": ["localhost"]
+            "pattern": { "domain": ["localhost"], "record": ["A"] },
+            "upstream": { "ipv4": "127.0.0.1" }
         },
         {
-            "dns": "udp://1.1.1.1:53",
-            "domain": ["."]
+            "pattern": { "suffix": [".arpa"] },
+            "upstream": "NODATA"
+        },
+        {
+            "pattern": { "suffix": ["."] },
+            "upstream": {
+                "doh": "1.1.1.1:443",
+                "domain": "cloudflare-dns.com"
+            }
+        },
+        {
+            "pattern": { "suffix": [".cn"] },
+            "upstream": { "udp": "119.29.29.29:53" }
         }
     ]
 }

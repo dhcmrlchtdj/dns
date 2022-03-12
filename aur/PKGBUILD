@@ -5,7 +5,7 @@ pkgdesc='DNS server'
 arch=('any')
 url="https://github.com/dhcmrlchtdj/godns"
 license=('AGPL-3.0-or-later')
-makedepends=('go' 'git')
+makedepends=('cargo' 'git')
 provides=('godns')
 backup=(etc/godns/config.json)
 source=(
@@ -13,11 +13,7 @@ source=(
     "godns.service"
     "${pkgname}::git+https://github.com/dhcmrlchtdj/godns.git"
 )
-sha256sums=(
-    '3faa9d81024a1f283a07a7b0cc3142b82a85cb64b1264ce7751eca3430d3eeaf'
-    'b9691eb247cbe422cccbc04d6304564ec5038affcdb2f598e357d363f05b72a7'
-    'SKIP'
-)
+sha256sums=()
 
 pkgver() {
     cd "${pkgname}"
@@ -25,23 +21,19 @@ pkgver() {
 }
 
 prepare(){
-    cd "${pkgname}"
-    mkdir -p build/
+    cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
 }
 
 build() {
     cd "${pkgname}"
-    export CGO_CPPFLAGS="${CPPFLAGS}"
-    export CGO_CFLAGS="${CFLAGS}"
-    export CGO_CXXFLAGS="${CXXFLAGS}"
-    export CGO_LDFLAGS="${LDFLAGS}"
-    export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
-    go build -o build .
+    export RUSTUP_TOOLCHAIN=stable
+    export CARGO_TARGET_DIR=target
+    cargo build --frozen --release --all-features
 }
 
 package() {
     cd "${pkgname}"
-    install -Dm755 "build/godns" "${pkgdir}/usr/bin/godns"
+    install -Dm755 "${srcdir}/target/release/godns" "${pkgdir}/usr/bin/godns"
     install -Dm644 "${srcdir}/godns.service" "${pkgdir}/usr/lib/systemd/system/godns.service"
     install -Dm644 "${srcdir}/config.json" "${pkgdir}/etc/godns/config.json"
 }
