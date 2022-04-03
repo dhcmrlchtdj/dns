@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"strings"
 
 	"github.com/miekg/dns"
 )
@@ -49,7 +50,7 @@ func (up *Upstream) IsValid() error {
 		}
 	}
 	if up.Ipv4 != "" {
-		if net.ParseIP(up.Ipv4) == nil {
+		if net.ParseIP(up.Ipv4) == nil || strings.Contains(up.Ipv4, ":") {
 			return errors.New("invalid IPv4 address")
 		}
 		if up.Ipv6 != "" || up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
@@ -57,7 +58,7 @@ func (up *Upstream) IsValid() error {
 		}
 	}
 	if up.Ipv6 != "" {
-		if net.ParseIP(up.Ipv6) == nil {
+		if net.ParseIP(up.Ipv6) == nil || strings.Count(up.Ipv6, ":") < 2 {
 			return errors.New("invalid IPv6 address")
 		}
 		if up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
