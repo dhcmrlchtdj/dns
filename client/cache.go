@@ -4,23 +4,25 @@ import (
 	"math"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
 
 type dnsCached struct {
-	answer  []Answer
+	answer  []dns.RR
 	expired time.Time
 }
 
-func (c *DNSClient) cacheSet(key string, answer []Answer) {
+func (c *DNSClient) cacheSet(key string, answer []dns.RR) {
 	if len(answer) == 0 {
 		return
 	}
 
-	minTTL := answer[0].TTL
+	minTTL := answer[0].Header().Ttl
 	for _, ans := range answer {
-		if ans.TTL < minTTL {
-			minTTL = ans.TTL
+		currTtl := ans.Header().Ttl
+		if currTtl < minTTL {
+			minTTL = currTtl
 		}
 	}
 
@@ -31,7 +33,7 @@ func (c *DNSClient) cacheSet(key string, answer []Answer) {
 	c.cache.Store(key, &val)
 }
 
-func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
+func (c *DNSClient) cacheGet(key string) ([]dns.RR, bool) {
 	val, found := c.cache.Load(key)
 	if !found {
 		return nil, false
@@ -44,7 +46,7 @@ func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
 	}
 
 	elapsed := time.Until(cached.expired)
-	ttl := int(math.Ceil(elapsed.Seconds()))
+	ttl := uint32(math.Ceil(elapsed.Seconds()))
 	if ttl <= 0 {
 		log.Debug().Str("module", "client.cache").Str("key", key).Msg("expired")
 		c.cache.Delete(key)
@@ -52,7 +54,7 @@ func (c *DNSClient) cacheGet(key string) ([]Answer, bool) {
 	}
 
 	for idx := range cached.answer {
-		cached.answer[idx].TTL = ttl
+		cached.answer[idx].Header().Ttl = ttl
 	}
 
 	return cached.answer, true

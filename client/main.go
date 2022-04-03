@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"sync"
@@ -13,7 +14,7 @@ import (
 
 ///
 
-type dnsClient func(string, uint16) []Answer
+type dnsClient func(string, uint16) []dns.RR
 
 type DNSClient struct {
 	cache      sync.Map // MAP("domain|type") => dnsCached
@@ -78,7 +79,7 @@ func (c *DNSClient) Init(forwards []config.Server) {
 
 ///
 
-func (c *DNSClient) Query(name string, qtype uint16) []Answer {
+func (c *DNSClient) Query(name string, qtype uint16) []dns.RR {
 	log.Debug().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("query")
 
 	name = dns.Fqdn(name)
@@ -88,13 +89,23 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 		staticIp, found := c.staticIpV4[name]
 		if found {
 			log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV4 hit")
-			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
+			record := fmt.Sprintf("%s %d %s %s", name, 3600, dns.Type(qtype).String(), staticIp)
+			rr, err := dns.NewRR(record)
+			if err != nil {
+				log.Error().Str("module", "client").Str("domain", name).Uint16("type", qtype).Err(err).Send()
+			}
+			return []dns.RR{rr}
 		}
 	} else if qtype == dns.TypeAAAA {
 		staticIp, found := c.staticIpV6[name]
 		if found {
 			log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("staticIpV6 hit")
-			return []Answer{{Name: name, Type: qtype, TTL: 60, Data: staticIp}}
+			record := fmt.Sprintf("%s %d %s %s", name, 3600, dns.Type(qtype).String(), staticIp)
+			rr, err := dns.NewRR(record)
+			if err != nil {
+				log.Error().Str("module", "client").Str("domain", name).Uint16("type", qtype).Err(err).Send()
+			}
+			return []dns.RR{rr}
 		}
 	}
 
@@ -118,17 +129,4 @@ func (c *DNSClient) Query(name string, qtype uint16) []Answer {
 	// not found
 	log.Info().Str("module", "client").Str("domain", name).Uint16("type", qtype).Msg("not found")
 	return nil
-}
-
-///
-
-type Answer struct {
-	// The record owner.
-	Name string `json:"name"`
-	// The type of DNS record.
-	Type uint16 `json:"type"`
-	// The number of seconds the answer can be stored in cache before it is considered stale.
-	TTL int `json:"TTL"`
-	// The value of the DNS record for the given name and type.
-	Data string `json:"data"`
 }

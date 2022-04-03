@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
@@ -30,7 +31,7 @@ func GetDoHClient(dohServer string, proxy string) dnsClient {
 		}
 	}
 
-	cc := func(name string, qtype uint16) []Answer {
+	cc := func(name string, qtype uint16) []dns.RR {
 		sublogger := log.With().
 			Str("module", "client.doh").
 			Str("server", dohServer).
@@ -72,7 +73,17 @@ func GetDoHClient(dohServer string, proxy string) dnsClient {
 			return nil
 		}
 
-		return r.Answer
+		answers := []dns.RR{}
+		for _, ans := range r.Answer {
+			record := fmt.Sprintf("%s %d %s %s", ans.Name, ans.TTL, dns.Type(ans.Type).String(), ans.Data)
+			rr, err := dns.NewRR(record)
+			if err != nil {
+				sublogger.Error().Err(err).Send()
+			}
+			answers = append(answers, rr)
+		}
+
+		return answers
 	}
 
 	log.Debug().Str("module", "client.doh").Str("server", dohServer).Msg("create DOH server")
@@ -93,5 +104,10 @@ type dohResponse struct {
 		Name string `json:"name"` // The record name requested.
 		Type uint16 `json:"type"` // The type of DNS record requested.
 	} `json:"Question"`
-	Answer []Answer `json:"Answer"`
+	Answer []struct {
+		Name string `json:"name"` // The record owner.
+		Type uint16 `json:"type"` // The type of DNS record.
+		TTL  int    `json:"TTL"`  // The number of seconds the answer can be stored in cache before it is considered stale.
+		Data string `json:"data"` // The value of the DNS record for the given name and type.
+	} `json:"Answer"`
 }

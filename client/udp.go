@@ -1,7 +1,6 @@
 package client
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/miekg/dns"
@@ -16,7 +15,7 @@ func GetUDPClient(udpServer string) dnsClient {
 		return c.(dnsClient)
 	}
 
-	cc := func(name string, qtype uint16) []Answer {
+	cc := func(name string, qtype uint16) []dns.RR {
 		sublogger := log.With().
 			Str("module", "client.udp").
 			Str("server", udpServer).
@@ -33,26 +32,10 @@ func GetUDPClient(udpServer string) dnsClient {
 			sublogger.Error().Err(err).Send()
 			return nil
 		}
-
-		var ans []Answer
-		for _, rr := range in.Answer {
-			ans = append(ans, rr2ans(rr))
-		}
-		return ans
+		return in.Answer
 	}
 
 	log.Debug().Str("module", "client.udp").Str("server", udpServer).Msg("create UDP server")
 	udpClientCache.Store(udpServer, cc)
 	return cc
-}
-
-func rr2ans(rr dns.RR) Answer {
-	hd := rr.Header()
-	var a Answer
-	a.Name = hd.Name
-	a.Type = hd.Rrtype
-	a.TTL = int(hd.Ttl)
-	// TODO: how to extract Data from RR
-	a.Data = strings.TrimSpace(rr.String()[len(hd.String()):])
-	return a
 }
