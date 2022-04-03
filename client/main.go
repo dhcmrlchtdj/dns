@@ -9,7 +9,7 @@ import (
 )
 
 type DnsResolver interface {
-	Resolve(question dns.Question) ([]dns.RR, error)
+	Resolve(question dns.Question, dnssec bool) ([]dns.RR, error)
 }
 
 var resolverCache = new(sync.Map)

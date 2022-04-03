@@ -43,7 +43,7 @@ func createDohResolver(upstream *config.Upstream) *Doh {
 	}
 }
 
-func (s *Doh) Resolve(question dns.Question) ([]dns.RR, error) {
+func (s *Doh) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	logger := log.With().
 		Str("module", "client.doh").
 		Str("domain", question.Name).
@@ -60,8 +60,10 @@ func (s *Doh) Resolve(question dns.Question) ([]dns.RR, error) {
 	q := req.URL.Query()
 	q.Set("name", question.Name)                    // Query Name
 	q.Set("type", dns.TypeToString[question.Qtype]) // Query Type
-	// q.Set("do", "true")                             // DO bit - set if client wants DNSSEC data
-	// q.Set("cd", "false")                            // CD bit - set to disable validation
+	if dnssec {
+		q.Set("do", "true") // DO bit - set if client wants DNSSEC data
+		// q.Set("cd", "false") // CD bit - set to disable validation
+	}
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := s.httpClient.Do(req)

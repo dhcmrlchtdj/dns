@@ -9,7 +9,7 @@ type Udp struct {
 	server string
 }
 
-func (u *Udp) Resolve(question dns.Question) ([]dns.RR, error) {
+func (u *Udp) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	logger := log.With().
 		Str("module", "client.udp").
 		Str("domain", question.Name).
@@ -18,6 +18,9 @@ func (u *Udp) Resolve(question dns.Question) ([]dns.RR, error) {
 
 	msg := new(dns.Msg)
 	msg.SetQuestion(question.Name, question.Qtype)
+	if dnssec {
+		msg.SetEdns0(4096, true)
+	}
 	in, err := dns.Exchange(msg, u.server)
 	if err != nil {
 		logger.Error().Err(err).Send()

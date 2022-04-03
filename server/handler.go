@@ -50,6 +50,7 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 	logger.Info().
 		Str("name", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).
+		Bool("dnssec", reply.IsEdns0() != nil).
 		Msg("query")
 
 	// from cache
@@ -77,7 +78,7 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 	}
 
 	// from upstream
-	ans, err := resolver.Resolve(question)
+	ans, err := resolver.Resolve(question, reply.IsEdns0() != nil)
 	if err == nil {
 		reply.Answer = ans
 		s.cacheSet(cacheKey, ans)

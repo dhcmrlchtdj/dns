@@ -12,7 +12,7 @@ type Ipv4 struct {
 	ip net.IP
 }
 
-func (ip *Ipv4) Resolve(question dns.Question) ([]dns.RR, error) {
+func (ip *Ipv4) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	logger := log.With().
 		Str("module", "client.ipv4").
 		Str("domain", question.Name).

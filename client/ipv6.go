@@ -12,7 +12,7 @@ type Ipv6 struct {
 	ip net.IP
 }
 
-func (ip *Ipv6) Resolve(question dns.Question) ([]dns.RR, error) {
+func (ip *Ipv6) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	logger := log.With().
 		Str("module", "client.ipv6").
 		Str("domain", question.Name).
