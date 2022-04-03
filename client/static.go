@@ -21,7 +21,7 @@ func (ip *StaticIp) Resolve(question dns.Question) ([]dns.RR, error) {
 	record := fmt.Sprintf(
 		"%s %d %s %s",
 		question.Name,
-		3600,
+		60,
 		dns.TypeToString[question.Qtype],
 		ip.addr,
 	)
