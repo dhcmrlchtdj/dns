@@ -1,41 +1,29 @@
 package client
 
 import (
-	"sync"
-
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
 
-var udpClientCache = new(sync.Map)
+type Udp struct {
+	server string
+}
 
-func GetUDPClient(udpServer string) dnsClient {
-	c, found := udpClientCache.Load(udpServer)
-	if found {
-		return c.(dnsClient)
+func (u *Udp) Resolve(question dns.Question) ([]dns.RR, error) {
+	logger := log.With().
+		Str("module", "client.udp").
+		Str("domain", question.Name).
+		Str("record", dns.TypeToString[question.Qtype]).
+		Logger()
+
+	msg := new(dns.Msg)
+	msg.SetQuestion(question.Name, question.Qtype)
+	in, err := dns.Exchange(msg, u.server)
+	if err != nil {
+		logger.Error().Err(err).Send()
+		return nil, err
 	}
 
-	cc := func(name string, qtype uint16) []dns.RR {
-		sublogger := log.With().
-			Str("module", "client.udp").
-			Str("server", udpServer).
-			Str("domain", name).
-			Uint16("type", qtype).
-			Logger()
-
-		sublogger.Info().Msg("query")
-
-		msg := new(dns.Msg)
-		msg.SetQuestion(name, qtype)
-		in, err := dns.Exchange(msg, udpServer)
-		if err != nil {
-			sublogger.Error().Err(err).Send()
-			return nil
-		}
-		return in.Answer
-	}
-
-	log.Debug().Str("module", "client.udp").Str("server", udpServer).Msg("create UDP server")
-	udpClientCache.Store(udpServer, cc)
-	return cc
+	logger.Trace().Msg("resolved")
+	return in.Answer, nil
 }

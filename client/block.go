@@ -5,19 +5,24 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func nodata(name string, qtype uint16) []dns.RR {
-	sublogger := log.With().
-		Str("module", "client.block").
-		Str("server", "nodata").
-		Str("domain", name).
-		Uint16("type", qtype).
-		Logger()
+type BlockByNodata struct{}
 
-	sublogger.Info().Msg("query")
-
-	return nil
+func (*BlockByNodata) Resolve(question dns.Question) ([]dns.RR, error) {
+	log.Trace().
+		Str("module", "client.block.nodata").
+		Str("domain", question.Name).
+		Str("record", dns.TypeToString[question.Qtype]).
+		Msg("resolved")
+	return nil, nil
 }
 
-func GetBlockNoDataClient() dnsClient {
-	return nodata
+type BlockByNxdomain struct{}
+
+func (*BlockByNxdomain) Resolve(question dns.Question) ([]dns.RR, error) {
+	log.Trace().
+		Str("module", "client.block.nxdomain").
+		Str("domain", question.Name).
+		Str("record", dns.TypeToString[question.Qtype]).
+		Msg("resolved")
+	return nil, &ErrDnsResponse{Rcode: dns.RcodeNameError}
 }

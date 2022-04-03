@@ -1,19 +1,26 @@
 {
-    "host": "localhost",
+    "host": "127.0.0.1",
     "port": 1053,
-    "logLevel": "info",
-    "forward": [
+    "log_level": "info",
+    "rule": [
         {
-            "dns": "ipv4://127.0.0.1",
-            "domain": ["localhost"]
+            "pattern": { "domain": ["localhost"], "record": "A" },
+            "upstream": { "ipv4": "127.0.0.1" }
         },
         {
-            "dns": "udp://1.1.1.1:53",
-            "domain": ["."]
+            "pattern": { "suffix": [".arpa"] },
+            "upstream": { "block": "nodata" }
         },
         {
-            "dns": "doh://1.1.1.1/dns-query",
-            "domain": ["."]
+            "pattern": { "suffix": ["."] },
+            "upstream": {
+                "doh": "https://1.1.1.1/dns-query",
+                "doh_proxy": "http://127.0.0.1:1080"
+            }
+        },
+        {
+            "pattern": { "suffix": [".cn"] },
+            "upstream": { "udp": "119.29.29.29:53" }
         }
     ]
 }

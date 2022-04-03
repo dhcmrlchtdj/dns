@@ -7,7 +7,7 @@ DNS server
 ```
 $ go build
 $ ./godns --help
-$ ./godns --port=1053 --log-level=debug --conf=/path/to/config
+$ ./godns --port=1053 --conf=/path/to/config
 ```
 
 ## Usage
@@ -33,12 +33,23 @@ $ brew services start godns
 ```json
 {
     "port": 1053,
-    "logLevel": "info",
-    "forward": [
-        { "dns": "ipv4://127.0.0.1", "domain": ["localhost"] },
-        { "dns": "udp://1.1.1.1:53", "domain": ["doh.pub"] },
-        { "dns": "doh://1.1.1.1/dns-query", "domain": ["."], "https_proxy": "http://127.0.0.1:1080" },
-        { "dns": "doh://doh.pub/dns-query", "domain": ["cn"] }
+    "log_level": "info",
+    "rule": [
+        {
+            "pattern": { "domain": ["localhost"], "record": "A" },
+            "upstream": { "ipv4": "127.0.0.1" }
+        },
+        {
+            "pattern": { "suffix": ["."] },
+            "upstream": {
+                "doh": "https://1.1.1.1/dns-query",
+                "doh_proxy": "http://127.0.0.1:1080"
+            }
+        },
+        {
+            "pattern": { "suffix": [".cn"] },
+            "upstream": { "udp": "119.29.29.29:53" }
+        }
     ]
 }
 ```
