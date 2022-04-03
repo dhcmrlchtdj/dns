@@ -12,20 +12,20 @@ func (s *DnsServer) ParseArgs() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	host := flag.String("host", "localhost", "DNS server host")
+	host := flag.String("host", "", "DNS server host. (default \"127.0.0.1\")")
 	port := flag.Int("port", 0, "DNS server port.")
 	configFile := flag.String("conf", "", "Path to config file.")
-	logLevel := flag.String("log-level", "", "Log level. trace, debug, info, error")
+	logLevel := flag.String("log-level", "", "Log level. trace, debug, info, error. (default \"info\")")
 	flag.Parse()
 
 	if len(*configFile) > 0 {
 		s.config.LoadConfigFile(*configFile)
 	}
 
-	if *host != "" {
+	if len(*host) > 0 {
 		s.config.Host = *host
 	}
-	if s.config.Host == "" {
+	if len(s.config.Host) == 0 {
 		s.config.Host = "127.0.0.1"
 	}
 
@@ -33,18 +33,16 @@ func (s *DnsServer) ParseArgs() {
 		s.config.Port = *port
 	}
 	if s.config.Port == 0 {
-		panic("Dns server port is unspecified")
+		panic("DNS server port is required")
 	}
 
 	if len(*logLevel) > 0 {
 		s.config.LogLevel = *logLevel
 	}
-	if len(s.config.LogLevel) > 0 {
-		zerolog.SetGlobalLevel(string2level(s.config.LogLevel))
-	} else {
+	if len(s.config.LogLevel) == 0 {
 		s.config.LogLevel = "info"
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+	zerolog.SetGlobalLevel(string2level(s.config.LogLevel))
 }
 
 func string2level(s string) zerolog.Level {
