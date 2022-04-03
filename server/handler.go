@@ -81,7 +81,7 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 	if err == nil {
 		reply.Answer = ans
 		s.cacheSet(cacheKey, ans)
-		logger.Debug().Msg("resolved")
+		logger.Trace().Msg("resolved")
 	} else {
 		var errRcode *client.ErrDnsResponse
 		if errors.As(err, &errRcode) {

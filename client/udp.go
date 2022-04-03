@@ -24,6 +24,6 @@ func (u *Udp) Resolve(question dns.Question) ([]dns.RR, error) {
 		return nil, err
 	}
 
-	logger.Trace().Msg("resolved")
+	logger.Debug().Msg("resolved")
 	return in.Answer, nil
 }

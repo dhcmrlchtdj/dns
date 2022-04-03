@@ -81,7 +81,7 @@ func (s *Doh) Resolve(question dns.Question) ([]dns.RR, error) {
 	}
 
 	if r.Status != 0 {
-		logger.Trace().
+		logger.Debug().
 			Str("rcode", dns.RcodeToString[r.Status]).
 			Msg("failed to resolved")
 		return nil, &ErrDnsResponse{Rcode: r.Status}
@@ -104,7 +104,7 @@ func (s *Doh) Resolve(question dns.Question) ([]dns.RR, error) {
 		answers = append(answers, rr)
 	}
 
-	logger.Trace().Msg("resolved")
+	logger.Debug().Msg("resolved")
 	return answers, nil
 }
 

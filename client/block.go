@@ -8,7 +8,7 @@ import (
 type BlockByNodata struct{}
 
 func (*BlockByNodata) Resolve(question dns.Question) ([]dns.RR, error) {
-	log.Trace().
+	log.Debug().
 		Str("module", "client.block.nodata").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).
@@ -19,7 +19,7 @@ func (*BlockByNodata) Resolve(question dns.Question) ([]dns.RR, error) {
 type BlockByNxdomain struct{}
 
 func (*BlockByNxdomain) Resolve(question dns.Question) ([]dns.RR, error) {
-	log.Trace().
+	log.Debug().
 		Str("module", "client.block.nxdomain").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).

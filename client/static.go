@@ -31,6 +31,6 @@ func (ip *StaticIp) Resolve(question dns.Question) ([]dns.RR, error) {
 		return nil, err
 	}
 
-	logger.Trace().Msg("resolved")
+	logger.Debug().Msg("resolved")
 	return []dns.RR{rr}, nil
 }
