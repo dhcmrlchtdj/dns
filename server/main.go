@@ -43,6 +43,7 @@ func (s *DnsServer) ListenAndServe() error {
 		Str("module", "server.main").
 		Str("host", s.config.Host).
 		Int("port", s.config.Port).
+		Str("log_level", s.config.LogLevel).
 		Msg("DNS server is running")
 	return s.dnsServer.ListenAndServe()
 }

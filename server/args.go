@@ -37,9 +37,13 @@ func (s *DnsServer) ParseArgs() {
 	}
 
 	if len(*logLevel) > 0 {
-		zerolog.SetGlobalLevel(string2level(*logLevel))
-	} else if len(s.config.LogLevel) > 0 {
+		s.config.LogLevel = *logLevel
+	}
+	if len(s.config.LogLevel) > 0 {
 		zerolog.SetGlobalLevel(string2level(s.config.LogLevel))
+	} else {
+		s.config.LogLevel = "info"
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 }
 
