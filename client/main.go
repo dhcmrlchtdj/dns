@@ -1,6 +1,8 @@
 package client
 
 import (
+	"sync"
+
 	"github.com/dhcmrlchtdj/godns/config"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
@@ -9,6 +11,8 @@ import (
 type DnsResolver interface {
 	Resolve(question dns.Question) ([]dns.RR, error)
 }
+
+var resolverCache = new(sync.Map)
 
 func GetByUpstream(upstream *config.Upstream) DnsResolver {
 	if upstream == nil {
@@ -22,10 +26,10 @@ func GetByUpstream(upstream *config.Upstream) DnsResolver {
 		return &BlockByNxdomain{}
 	}
 	if upstream.Ipv4 != "" {
-		return &StaticIp{addr: upstream.Ipv4}
+		return createIpv4Resolver(upstream)
 	}
 	if upstream.Ipv6 != "" {
-		return &StaticIp{addr: upstream.Ipv6}
+		return createIpv6Resolver(upstream)
 	}
 	if upstream.Udp != "" {
 		return &Udp{server: upstream.Udp}

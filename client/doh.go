@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/dhcmrlchtdj/godns/config"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
-
-var dohClientCache = new(sync.Map)
 
 type Doh struct {
 	server     string
@@ -25,7 +22,7 @@ func createDohResolver(upstream *config.Upstream) *Doh {
 		Logger()
 
 	cacheKey := upstream.Doh + "|" + upstream.DohProxy
-	if client, found := dohClientCache.Load(cacheKey); found {
+	if client, found := resolverCache.Load(cacheKey); found {
 		logger.Trace().Msg("get resolver from cache")
 		return client.(*Doh)
 	} else {
@@ -40,7 +37,7 @@ func createDohResolver(upstream *config.Upstream) *Doh {
 			}
 		}
 		client := &Doh{server: upstream.Doh, httpClient: httpClient}
-		dohClientCache.Store(cacheKey, client)
+		resolverCache.Store(cacheKey, client)
 		logger.Trace().Msg("new resolver created")
 		return client
 	}
