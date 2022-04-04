@@ -7,3 +7,7 @@ run:
 build:
 	@mkdir -p build
 	go build -o build .
+
+fmt:
+	gofumpt -w .
+	goimports -w .

@@ -47,18 +47,11 @@ func (s *DnsServer) InitServer() {
 }
 
 func (s *DnsServer) Start() {
-	defer s.shutdown()
 	if err := s.dnsServer.ListenAndServe(); err != nil {
 		log.Error().
 			Str("module", "server.main").
 			Err(err).
 			Send()
-		panic(err)
-	}
-}
-
-func (s *DnsServer) shutdown() {
-	if err := s.dnsServer.Shutdown(); err != nil {
 		panic(err)
 	}
 }
