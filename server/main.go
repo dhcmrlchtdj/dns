@@ -17,8 +17,8 @@ type DnsServer struct {
 	cache     sync.Map
 }
 
-func NewDnsServer() DnsServer {
-	server := DnsServer{}
+func NewDnsServer() *DnsServer {
+	server := new(DnsServer)
 	server.router.defaultRouter = new(routerNode)
 	server.router.recordRouter = make(map[uint16]*routerNode)
 	return server
@@ -48,6 +48,8 @@ func (s *DnsServer) ListenAndServe() error {
 	return s.dnsServer.ListenAndServe()
 }
 
-func (s *DnsServer) Shutdown() error {
-	return s.dnsServer.Shutdown()
+func (s *DnsServer) Shutdown() {
+	if err := s.dnsServer.Shutdown(); err != nil {
+		panic(err)
+	}
 }

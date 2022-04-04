@@ -76,7 +76,7 @@ func (r *router) search(domain string, record uint16) *config.Upstream {
 	return nil
 }
 
-func (r *router) addRules(rules []config.Rule) {
+func (r *router) addRules(rules []*config.Rule) {
 	for idx, rule := range rules {
 		for _, domain := range rule.Pattern.Domain {
 			r.addDomain(domain, false, rule.Pattern.Record, rule.Upstream, idx)

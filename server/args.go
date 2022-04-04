@@ -25,7 +25,7 @@ func (s *DnsServer) ParseArgs() {
 	if len(*host) > 0 {
 		s.config.Host = *host
 	}
-	if len(s.config.Host) == 0 {
+	if s.config.Host == "" {
 		s.config.Host = "127.0.0.1"
 	}
 
@@ -39,7 +39,7 @@ func (s *DnsServer) ParseArgs() {
 	if len(*logLevel) > 0 {
 		s.config.LogLevel = *logLevel
 	}
-	if len(s.config.LogLevel) == 0 {
+	if s.config.LogLevel == "" {
 		s.config.LogLevel = "info"
 	}
 	zerolog.SetGlobalLevel(string2level(s.config.LogLevel))

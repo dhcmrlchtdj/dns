@@ -6,13 +6,13 @@ import (
 )
 
 func main() {
-	server := server.NewDnsServer()
-	server.ParseArgs()
-	server.InitDnsRouter()
-	server.InitDnsServer()
-	if err := server.ListenAndServe(); err != nil {
+	dnsServer := server.NewDnsServer()
+	dnsServer.ParseArgs()
+	dnsServer.InitDnsRouter()
+	dnsServer.InitDnsServer()
+	defer dnsServer.Shutdown()
+	if err := dnsServer.ListenAndServe(); err != nil {
 		log.Error().Err(err).Send()
 		panic(err)
 	}
-	defer server.Shutdown()
 }

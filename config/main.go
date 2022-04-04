@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	Host     string `json:"host,omitempty"`
-	Port     int    `json:"port,omitempty"`
-	LogLevel string `json:"log_level,omitempty"`
-	Rule     []Rule `json:"rule,omitempty"`
+	Host     string  `json:"host,omitempty"`
+	Port     int     `json:"port,omitempty"`
+	LogLevel string  `json:"log_level,omitempty"`
+	Rule     []*Rule `json:"rule,omitempty"`
 }
 
 type Rule struct {
