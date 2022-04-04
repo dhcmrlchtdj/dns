@@ -14,7 +14,7 @@ source=(
     "${pkgname}::git+https://github.com/dhcmrlchtdj/godns.git"
 )
 sha256sums=(
-    '3faa9d81024a1f283a07a7b0cc3142b82a85cb64b1264ce7751eca3430d3eeaf'
+    'fb854cdb4ff952aee393e8e77ea0555737c8ba1907a95ed7b74672e340a38580'
     'b9691eb247cbe422cccbc04d6304564ec5038affcdb2f598e357d363f05b72a7'
     'SKIP'
 )
