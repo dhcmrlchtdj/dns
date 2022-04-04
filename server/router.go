@@ -172,7 +172,7 @@ func (node *routerNode) addDomain(domain string, isSuffix bool, upstream config.
 
 func domainToSegments(domain string) []string {
 	rev := []string{}
-	fullDomain := dns.Fqdn(domain)
+	fullDomain := dns.CanonicalName(domain)
 	splited := strings.Split(fullDomain, ".")
 	for i := len(splited) - 2; i >= 0; i-- {
 		if len(splited[i]) > 0 {
