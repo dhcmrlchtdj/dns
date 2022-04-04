@@ -19,6 +19,7 @@ func (r *Rule) IsValid() error {
 	if err := r.Upstream.IsValid(); err != nil {
 		return err
 	}
+	// TODO: ipv4 can't use without record A
 	return nil
 }
 
