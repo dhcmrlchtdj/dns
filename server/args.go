@@ -32,9 +32,6 @@ func (s *DnsServer) ParseArgs() {
 	if *port != 0 {
 		s.config.Port = *port
 	}
-	if s.config.Port == 0 {
-		panic("DNS server port is required")
-	}
 
 	if len(*logLevel) > 0 {
 		s.config.LogLevel = *logLevel

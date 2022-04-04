@@ -1,7 +1,7 @@
 SHELL := bash
 
 run:
-	go run -race ./main.go --log-level=trace --conf=./aur/config.json
+	go run -race ./main.go --conf=./aur/config.json --log-level=trace --port=1053
 
 .PHONY: build
 build:

@@ -24,31 +24,40 @@ func NewDnsServer() *DnsServer {
 	return server
 }
 
-func (s *DnsServer) InitDnsRouter() {
+func (s *DnsServer) InitRouter() {
 	s.router.addRules(s.config.Rule)
 }
 
-func (s *DnsServer) InitDnsServer() {
+func (s *DnsServer) InitServer() {
 	dnsMux := dns.NewServeMux()
 	s.dnsServer = &dns.Server{
 		Addr:    net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port)),
 		Net:     "udp",
 		Handler: dnsMux,
+		NotifyStartedFunc: func() {
+			addr := s.dnsServer.PacketConn.LocalAddr()
+			log.Info().
+				Str("module", "server.main").
+				Str("log_level", s.config.LogLevel).
+				Str("server_addr", addr.String()).
+				Msg("DNS server is running")
+		},
 	}
 	dnsMux.HandleFunc(".", s.handleRequest)
 }
 
-func (s *DnsServer) ListenAndServe() error {
-	log.Info().
-		Str("module", "server.main").
-		Str("host", s.config.Host).
-		Int("port", s.config.Port).
-		Str("log_level", s.config.LogLevel).
-		Msg("DNS server is running")
-	return s.dnsServer.ListenAndServe()
+func (s *DnsServer) Start() {
+	defer s.shutdown()
+	if err := s.dnsServer.ListenAndServe(); err != nil {
+		log.Error().
+			Str("module", "server.main").
+			Err(err).
+			Send()
+		panic(err)
+	}
 }
 
-func (s *DnsServer) Shutdown() {
+func (s *DnsServer) shutdown() {
 	if err := s.dnsServer.Shutdown(); err != nil {
 		panic(err)
 	}
