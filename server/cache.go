@@ -31,7 +31,11 @@ func (s *DnsServer) cacheSet(key string, answer []dns.RR) {
 		expired: time.Now().Add(time.Duration(minTtl) * time.Second),
 	}
 
-	log.Trace().Str("module", "server.cache").Str("key", key).Msg("added")
+	log.Trace().
+		Str("module", "server.cache").
+		Str("key", key).
+		Uint32("TTL", minTtl).
+		Msg("added")
 	s.cache.Store(key, &val)
 }
 
