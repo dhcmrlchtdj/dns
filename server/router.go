@@ -36,21 +36,14 @@ func (r *router) search(domain string, record uint16) *config.Upstream {
 
 	segments := domainToSegments(domain)
 
-	m1, l1 := r.recordRouter[record].searchSegments(segments)
-	m2, l2 := r.defaultRouter.searchSegments(segments)
+	m1 := r.recordRouter[record].searchSegments(segments)
+	m2 := r.defaultRouter.searchSegments(segments)
 	if m1 != nil && m2 != nil {
 		if m1.isSuffix == false {
 			logger.Trace().Msg("recordRouter, domain")
 			return &m1.upstream
 		} else if m2.isSuffix == false {
 			logger.Trace().Msg("defaultRouter, domain")
-			return &m2.upstream
-		}
-		if l1 > l2 {
-			logger.Trace().Msg("recordRouter, longer suffix")
-			return &m1.upstream
-		} else if l2 > l1 {
-			logger.Trace().Msg("defaultRouter, longer suffix")
 			return &m2.upstream
 		}
 		if m1.index < m2.index {
@@ -113,33 +106,31 @@ func (r *router) addDomain(domain string, isSuffix bool, record string, upstream
 
 ///
 
-func (node *routerNode) searchSegments(segments []string) (*routerMatched, int) {
+func (node *routerNode) searchSegments(segments []string) *routerMatched {
 	if node == nil {
-		return nil, 0
+		return nil
 	}
 
 	curr := node
 	var matched *routerMatched = curr.suffix
-	var level int = 0
 	for _, segment := range segments {
 		if curr.next == nil {
-			return matched, level
+			return matched
 		}
 		next, found := curr.next[segment]
 		if !found {
-			return matched, level
+			return matched
 		}
 		curr = next
 		if curr.suffix != nil {
 			matched = curr.suffix
-			level += 1
 		}
 	}
 
 	if curr.domain != nil {
-		return curr.domain, 0
+		return curr.domain
 	} else {
-		return matched, level
+		return matched
 	}
 }
 
