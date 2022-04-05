@@ -52,7 +52,7 @@ func (s *DnsServer) cacheGet(key string) ([]dns.RR, bool) {
 	}
 
 	elapsed := time.Until(cached.expired)
-	ttl := uint32(math.Ceil(elapsed.Seconds()))
+	ttl := math.Ceil(elapsed.Seconds())
 	if ttl <= 0 {
 		s.cache.Delete(key)
 		logger.Trace().Msg("expired")
@@ -60,9 +60,9 @@ func (s *DnsServer) cacheGet(key string) ([]dns.RR, bool) {
 	}
 
 	for idx := range cached.answer {
-		cached.answer[idx].Header().Ttl = ttl
+		cached.answer[idx].Header().Ttl = uint32(ttl)
 	}
 
-	logger.Debug().Uint32("TTL", ttl).Msg("hit")
+	logger.Debug().Float64("TTL", ttl).Msg("hit")
 	return cached.answer, true
 }
