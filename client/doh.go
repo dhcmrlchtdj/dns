@@ -82,7 +82,7 @@ func (s *Doh) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	if r.Status != 0 {
 		logger.Debug().
 			Str("rcode", dns.RcodeToString[r.Status]).
-			Msg("failed to resolved")
+			Msg("failed to resolve")
 		return nil, &ErrDnsResponse{Rcode: r.Status}
 	}
 
