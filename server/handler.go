@@ -55,7 +55,8 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 
 	// from cache
 	cacheKey := question.String()
-	if ans, found := s.cacheGet(cacheKey); found {
+	ans := s.cacheGet(cacheKey)
+	if ans != nil {
 		logger.Trace().Msg("from cache")
 		reply.Answer = ans
 		return

@@ -39,34 +39,34 @@ func (s *DnsServer) cacheSet(key string, answer []dns.RR) {
 	s.cache.Store(key, &val)
 }
 
-func (s *DnsServer) cacheGet(key string) ([]dns.RR, bool) {
+func (s *DnsServer) cacheGet(key string) []dns.RR {
 	logger := log.With().Str("module", "server.cache").Str("key", key).Logger()
 
 	val, found := s.cache.Load(key)
 	if !found {
 		logger.Trace().Msg("missed")
-		return nil, false
+		return nil
 	}
 
 	cached, ok := val.(*cachedAnswer)
 	if !ok {
 		s.cache.Delete(key)
 		logger.Trace().Msg("missed")
-		return nil, false
+		return nil
 	}
 
-	elapsed := time.Until(cached.expired)
-	ttl := math.Ceil(elapsed.Seconds())
-	if ttl <= 0 {
+	sec := math.Ceil(time.Until(cached.expired).Seconds())
+	if sec <= 0 {
 		s.cache.Delete(key)
 		logger.Trace().Msg("expired")
-		return nil, false
+		return nil
 	}
+	ttl := uint32(sec)
 
 	for idx := range cached.answer {
-		cached.answer[idx].Header().Ttl = uint32(ttl)
+		cached.answer[idx].Header().Ttl = ttl
 	}
 
-	logger.Debug().Float64("TTL", ttl).Msg("hit")
-	return cached.answer, true
+	logger.Debug().Uint32("TTL", ttl).Msg("hit")
+	return cached.answer
 }
