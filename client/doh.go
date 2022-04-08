@@ -100,7 +100,11 @@ func (s *Doh) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 			logger.Error().Err(err).Send()
 			return nil, err
 		}
-		answers = append(answers, rr)
+		if rr == nil {
+			logger.Error().Str("record", record).Msg("unknown record")
+		} else {
+			answers = append(answers, rr)
+		}
 	}
 
 	logger.Debug().Msg("resolved")
