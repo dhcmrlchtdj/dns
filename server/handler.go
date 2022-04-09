@@ -16,9 +16,12 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 
 	reply := new(dns.Msg)
 	reply.SetReply(request)
+	if edns := request.IsEdns0(); edns != nil {
+		reply.SetEdns0(4096, true)
+	}
 
 	logger.Trace().
-		Str("Opcode", dns.OpcodeToString[request.Opcode]).
+		Str("opcode", dns.OpcodeToString[request.Opcode]).
 		Msg("receive request")
 	if request.Opcode == dns.OpcodeQuery {
 		s.Query(reply)
@@ -67,7 +70,7 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 	// no upstream
 	if upstream == nil {
 		logger.Trace().Msg("no upstream")
-		reply.Rcode = dns.RcodeNameError
+		reply.Rcode = dns.RcodeNotImplemented
 		return
 	}
 	// no resolver
@@ -87,7 +90,7 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 	} else {
 		var errRcode *client.ErrDnsResponse
 		if errors.As(err, &errRcode) {
-			reply.Rcode = dns.RcodeNameError
+			reply.Rcode = errRcode.Rcode
 			logger.Debug().
 				Str("Rcode", dns.RcodeToString[reply.Rcode]).
 				Msg("resolved")

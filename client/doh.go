@@ -88,6 +88,11 @@ func (s *Doh) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 
 	answers := []dns.RR{}
 	for _, ans := range r.Answer {
+		// skip RRSIG
+		if ans.Type == 46 {
+			continue
+		}
+		// FIXME: how to format a record?
 		record := fmt.Sprintf(
 			"%s %d %s %s",
 			ans.Name,
@@ -97,7 +102,10 @@ func (s *Doh) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 		)
 		rr, err := dns.NewRR(record)
 		if err != nil {
-			logger.Error().Err(err).Send()
+			logger.Error().
+				Err(err).
+				Str("record", record).
+				Msg("failed to parse record")
 			return nil, err
 		}
 		if rr == nil {
