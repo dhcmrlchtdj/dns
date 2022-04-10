@@ -22,11 +22,23 @@ use trust_dns_server::{
 };
 
 pub type ProxyConnection = GenericConnection;
-pub type ProxyConnectionProvider = GenericConnectionProvider<ProxyRuntime>;
-pub type ProxyAsyncResolver = AsyncResolver<ProxyConnection, ProxyConnectionProvider>;
+pub type ProxyConnectionProvider<P: MaybeSocketAddr> = GenericConnectionProvider<ProxyRuntime<P>>;
+pub type ProxyAsyncResolver<P: MaybeSocketAddr> =
+    AsyncResolver<ProxyConnection, ProxyConnectionProvider<P>>;
 
 // AsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
 // ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
+
+pub trait MaybeSocketAddr {
+    fn get_proxy_addr() -> Option<SocketAddr>;
+}
+
+pub struct OptAddr(Option((String, u16)));
+impl MaybeSocketAddr for OptAddr {
+    fn get_proxy_addr() -> Option<SocketAddr> {
+        
+    }
+}
 
 #[derive(Clone)]
 pub struct ProxyHandle;
@@ -40,19 +52,20 @@ impl Spawn for ProxyHandle {
 }
 
 #[derive(Clone)]
-pub struct ProxyRuntime;
-impl RuntimeProvider for ProxyRuntime {
+pub struct ProxyRuntime<P: MaybeSocketAddr>(P);
+impl<P: MaybeSocketAddr> RuntimeProvider for ProxyRuntime<P> {
     type Handle = ProxyHandle;
-    type Tcp = ProxyTcpStream;
+    type Tcp = ProxyTcpStream<P>;
     type Timer = TokioTime;
     type Udp = tokio::net::UdpSocket;
 }
 
-pub struct ProxyTcpStream {
+pub struct ProxyTcpStream<P: MaybeSocketAddr> {
     inner: Socks5Stream<TcpStream>,
+    proxy: P,
 }
 
-impl futures_io::AsyncRead for ProxyTcpStream {
+impl<P: MaybeSocketAddr> futures_io::AsyncRead for ProxyTcpStream<P> {
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -63,7 +76,7 @@ impl futures_io::AsyncRead for ProxyTcpStream {
         polled.map_ok(|_| buf.filled().len())
     }
 }
-impl futures_io::AsyncWrite for ProxyTcpStream {
+impl<P: MaybeSocketAddr> futures_io::AsyncWrite for ProxyTcpStream<P> {
     fn poll_write(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -79,18 +92,18 @@ impl futures_io::AsyncWrite for ProxyTcpStream {
     }
 }
 #[async_trait::async_trait]
-impl Connect for ProxyTcpStream {
+impl<P: MaybeSocketAddr> Connect for ProxyTcpStream<P> {
     async fn connect_with_bind(
         addr: SocketAddr,
         _bind_addr: Option<SocketAddr>,
     ) -> std::io::Result<Self> {
         let proxy_addr = ("127.0.0.1", 1080);
         match Socks5Stream::connect(proxy_addr, addr).await {
-            Ok(inner) => Ok(Self { inner }),
+            Ok(inner) => Ok(Self { inner, proxy: P }),
             Err(err) => Err(futures_io::Error::new(futures_io::ErrorKind::Other, err)),
         }
     }
 }
-impl DnsTcpStream for ProxyTcpStream {
+impl<P: MaybeSocketAddr> DnsTcpStream for ProxyTcpStream<P> {
     type Time = TokioTime;
 }
