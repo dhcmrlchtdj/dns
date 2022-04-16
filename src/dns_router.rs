@@ -27,15 +27,14 @@ impl DnsRouter {
                 .filter(|x| !x.is_empty())
                 .rev()
                 .collect::<Vec<&str>>();
-            match record.clone() {
+            match record {
                 None => self
                     .default_router
                     .add(is_suffix, segments, rule.upstream.clone(), index),
-                Some(records) => records.into_iter().for_each(|record| {
-                    // TODO: validate record and upstream, for example, A record doesn't work with IPv6
+                Some(record) => {
                     let node = self.record_router.entry(record).or_insert_with(Node::new);
                     node.add(is_suffix, segments.clone(), rule.upstream.clone(), index);
-                }),
+                },
             };
         });
     }

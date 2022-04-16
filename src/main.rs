@@ -22,16 +22,11 @@ async fn main() -> Result<()> {
 
     config.validate_rules()?;
 
-    dbg!(&config);
-
     let mut handler = dns_handler::DnsHandler::new();
     handler.add_rules(config.rule);
 
-    dbg!(&handler);
-
     let mut dns_server = trust_dns_server::ServerFuture::new(handler);
     let sock = tokio::net::UdpSocket::bind((config.host, config.port)).await?;
-    dbg!(&sock);
     dns_server.register_socket(sock);
     dns_server.block_until_done().await?;
 

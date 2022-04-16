@@ -67,23 +67,25 @@ impl Config {
     fn validate_rule(&self, rule: &Rule) -> Result<()> {
         match &rule.upstream {
             Upstream::IPv4 { .. } => {
-                let records = match &rule.pattern {
-                    Pattern::Domain { record, .. } => record,
-                    Pattern::Suffix { record, .. } => record,
-                };
-                match records {
-                    Some(records) if records.first() == Some(&RecordType::A) => Ok(()),
-                    _ => Err(anyhow!("IPv4 should be used with 'A'")),
+                match rule.pattern {
+                    Pattern::Domain {
+                        record: Some(r), ..
+                    } if r != RecordType::A => Err(anyhow!("IPv4 should be used with 'A'")),
+                    Pattern::Suffix {
+                        record: Some(r), ..
+                    } if r != RecordType::A => Err(anyhow!("IPv4 should be used with 'A'")),
+                    _ => Ok(()),
                 }
             }
             Upstream::IPv6 { .. } => {
-                let records = match &rule.pattern {
-                    Pattern::Domain { record, .. } => record,
-                    Pattern::Suffix { record, .. } => record,
-                };
-                match records {
-                    Some(records) if records.first() == Some(&RecordType::AAAA) => Ok(()),
-                    _ => Err(anyhow!("IPv6 should be used with 'AAAA'")),
+                match rule.pattern {
+                    Pattern::Domain {
+                        record: Some(r), ..
+                    } if r != RecordType::AAAA => Err(anyhow!("IPv6 should be used with 'AAAA'")),
+                    Pattern::Suffix {
+                        record: Some(r), ..
+                    } if r != RecordType::AAAA => Err(anyhow!("IPv6 should be used with 'AAAA'")),
+                    _ => Ok(()),
                 }
             }
             _ => Ok(()),
@@ -111,12 +113,12 @@ pub enum Pattern {
     Domain {
         domain: Vec<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        record: Option<Vec<RecordType>>,
+        record: Option<RecordType>,
     },
     Suffix {
         suffix: Vec<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        record: Option<Vec<RecordType>>,
+        record: Option<RecordType>,
     },
 }
 
