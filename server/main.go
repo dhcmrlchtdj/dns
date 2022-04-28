@@ -25,6 +25,9 @@ func NewDnsServer() *DnsServer {
 }
 
 func (s *DnsServer) InitRouter() {
+	log.Debug().
+		Str("module", "server.main").
+		Msg("loading config")
 	s.router.addRules(s.config.Rule)
 }
 
