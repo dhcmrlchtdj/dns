@@ -39,10 +39,10 @@ func (r *router) search(domain string, record uint16) *config.Upstream {
 	m1 := r.recordRouter[record].searchSegments(segments)
 	m2 := r.defaultRouter.searchSegments(segments)
 	if m1 != nil && m2 != nil {
-		if m1.isSuffix == false {
+		if !m1.isSuffix {
 			logger.Trace().Msg("recordRouter, domain")
 			return &m1.upstream
-		} else if m2.isSuffix == false {
+		} else if !m2.isSuffix {
 			logger.Trace().Msg("defaultRouter, domain")
 			return &m2.upstream
 		}
