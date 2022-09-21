@@ -3,9 +3,10 @@ package client
 import (
 	"net"
 
-	"github.com/dhcmrlchtdj/godns/config"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
+
+	"github.com/dhcmrlchtdj/godns/config"
 )
 
 type Ipv4 struct {

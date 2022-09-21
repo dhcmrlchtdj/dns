@@ -3,9 +3,10 @@ package server
 import (
 	"errors"
 
-	"github.com/dhcmrlchtdj/godns/client"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
+
+	"github.com/dhcmrlchtdj/godns/client"
 )
 
 func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {

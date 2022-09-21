@@ -3,9 +3,10 @@ package server
 import (
 	"strings"
 
-	"github.com/dhcmrlchtdj/godns/config"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
+
+	"github.com/dhcmrlchtdj/godns/config"
 )
 
 type router struct {
