@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-	// log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	dnsServer := server.NewDnsServer()
