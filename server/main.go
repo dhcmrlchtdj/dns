@@ -51,6 +51,7 @@ func (s *DnsServer) InitServer() {
 }
 
 func (s *DnsServer) Start() {
+	s.cleanupExpiredCache()
 	if err := s.dnsServer.ListenAndServe(); err != nil {
 		log.Error().
 			Str("module", "server.main").

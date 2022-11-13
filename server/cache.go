@@ -13,6 +13,35 @@ type cachedAnswer struct {
 	expired time.Time
 }
 
+func (s *DnsServer) cleanupExpiredCache() {
+	go func() {
+		logger := log.With().Str("module", "server.cache.cleanup").Logger()
+		ticker := time.NewTicker(time.Minute)
+		for {
+			<-ticker.C
+			logger.Trace().Msg("cleaning")
+			s.cache.Range(func(key any, val any) bool {
+				cached, ok := val.(*cachedAnswer)
+				if !ok {
+					s.cache.Delete(key)
+					logger.Trace().Str("key", key.(string)).Msg("invalid")
+					return true
+				}
+
+				sec := math.Ceil(time.Until(cached.expired).Seconds())
+				if sec <= 0 {
+					s.cache.Delete(key)
+					logger.Trace().Str("key", key.(string)).Msg("expired")
+					return true
+				}
+
+				return true
+			})
+			logger.Trace().Msg("cleaned")
+		}
+	}()
+}
+
 func (s *DnsServer) cacheSet(key string, answer []dns.RR) {
 	if len(answer) == 0 {
 		return
@@ -51,7 +80,7 @@ func (s *DnsServer) cacheGet(key string) []dns.RR {
 	cached, ok := val.(*cachedAnswer)
 	if !ok {
 		s.cache.Delete(key)
-		logger.Trace().Msg("missed")
+		logger.Trace().Msg("invalid")
 		return nil
 	}
 
