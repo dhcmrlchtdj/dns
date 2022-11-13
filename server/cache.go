@@ -14,11 +14,12 @@ type cachedAnswer struct {
 }
 
 func (s *DnsServer) cleanupExpiredCache() {
+	ticker := time.NewTicker(time.Minute)
+
 	go func() {
 		logger := log.With().Str("module", "server.cache.cleanup").Logger()
-		ticker := time.NewTicker(time.Minute)
-		for {
-			<-ticker.C
+
+		for range ticker.C {
 			logger.Trace().Msg("cleaning")
 			s.cache.Range(func(key any, val any) bool {
 				cached, ok := val.(*cachedAnswer)
