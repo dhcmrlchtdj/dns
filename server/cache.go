@@ -50,7 +50,11 @@ func (s *DnsServer) cacheGet(ctx context.Context, key string) ([]dns.RR, *int) {
 	if sec <= 0 {
 		s.cache.Delete(key)
 		logger.Trace().Msg("expired")
-		return nil, nil
+
+		// If the upstream return a empty answer, the ttl will be set to 0,
+		// the answer will be considered expired when it added to cache.
+		// Here we set sec=1 to reuse the expired cache.
+		sec = 1
 	}
 	ttl := uint32(sec)
 
@@ -104,6 +108,9 @@ func (s *DnsServer) cacheResolve(ctx context.Context, key string, answer []dns.R
 		if currTtl < ttl {
 			ttl = currTtl
 		}
+	}
+	if len(answer) == 0 {
+		ttl = 0
 	}
 
 	ans := cachedAnswer{
