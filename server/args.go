@@ -8,7 +8,7 @@ func (s *DnsServer) ParseArgs() {
 	host := flag.String("host", "", "DNS server host. (default \"127.0.0.1\")")
 	port := flag.Int("port", 0, "DNS server port.")
 	configFile := flag.String("conf", "", "Path to config file.")
-	logLevel := flag.String("log-level", "", "Log level. trace, debug, info, error. (default \"info\")")
+	logLevel := flag.String("log-level", "", "Log level. trace, debug, info, warn, error, fatal, panic. (default \"info\")")
 	flag.Parse()
 
 	if len(*configFile) > 0 {

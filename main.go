@@ -14,23 +14,14 @@ func main() {
 	dnsServer := server.NewDnsServer()
 	dnsServer.SetupContext()
 	dnsServer.ParseArgs()
-	zerolog.SetGlobalLevel(string2level(dnsServer.Config.LogLevel))
+
+	level, err := zerolog.ParseLevel(dnsServer.Config.LogLevel)
+	if err != nil {
+		panic(err)
+	}
+	zerolog.SetGlobalLevel(level)
+
 	dnsServer.SetupRouter()
 	dnsServer.SetupServer()
 	dnsServer.Start()
-}
-
-func string2level(s string) zerolog.Level {
-	switch s {
-	case "trace":
-		return zerolog.TraceLevel
-	case "debug":
-		return zerolog.DebugLevel
-	case "info":
-		return zerolog.InfoLevel
-	case "error":
-		return zerolog.ErrorLevel
-	default:
-		panic("invalid log level: " + s)
-	}
 }
