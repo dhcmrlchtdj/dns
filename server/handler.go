@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
@@ -23,6 +24,8 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 		Str("module", "server.handler").
 		Logger()
 
+	start := time.Now()
+
 	reply := new(dns.Msg)
 	reply.SetReply(request)
 	if edns := request.IsEdns0(); edns != nil {
@@ -42,6 +45,9 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("failed to write reply")
 	}
+
+	latency := time.Since(start)
+	logger.Trace().Dur("latency", latency).Send()
 }
 
 func (s *DnsServer) query(ctx context.Context, reply *dns.Msg) {
