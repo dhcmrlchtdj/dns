@@ -20,7 +20,7 @@ type routerNode struct {
 	suffix *routerMatched
 }
 type routerMatched struct {
-	upstream config.Upstream
+	upstream *config.Upstream
 	isSuffix bool
 	index    int
 }
@@ -44,29 +44,29 @@ func (r *router) search(ctx context.Context, domain string, record uint16) *conf
 	if m1 != nil && m2 != nil {
 		if !m1.isSuffix {
 			logger.Trace().Msg("recordRouter, domain")
-			return &m1.upstream
+			return m1.upstream
 		} else if !m2.isSuffix {
 			logger.Trace().Msg("defaultRouter, domain")
-			return &m2.upstream
+			return m2.upstream
 		}
 		if m1.index < m2.index {
 			logger.Trace().Msg("recordRouter, higher index")
-			return &m1.upstream
+			return m1.upstream
 		} else if m2.index < m1.index {
 			logger.Trace().Msg("defaultRouter, higher index")
-			return &m2.upstream
+			return m2.upstream
 		} else {
 			logger.Trace().Msg("recordRouter, record")
-			return &m1.upstream
+			return m1.upstream
 		}
 	}
 	if m1 != nil {
 		logger.Trace().Msg("recordRouter")
-		return &m1.upstream
+		return m1.upstream
 	}
 	if m2 != nil {
 		logger.Trace().Msg("defaultRouter")
-		return &m2.upstream
+		return m2.upstream
 	}
 	logger.Trace().Msg("not found")
 	return nil
@@ -75,15 +75,22 @@ func (r *router) search(ctx context.Context, domain string, record uint16) *conf
 func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
 	for idx, rule := range rules {
 		for _, domain := range rule.Pattern.Domain {
-			r.addDomain(ctx, domain, false, rule.Pattern.Record, rule.Upstream, idx)
+			r.addDomain(ctx, domain, false, rule.Pattern.Record, &rule.Upstream, idx)
 		}
 		for _, domain := range rule.Pattern.Suffix {
-			r.addDomain(ctx, domain, true, rule.Pattern.Record, rule.Upstream, idx)
+			r.addDomain(ctx, domain, true, rule.Pattern.Record, &rule.Upstream, idx)
 		}
 	}
 }
 
-func (r *router) addDomain(ctx context.Context, domain string, isSuffix bool, record string, upstream config.Upstream, idx int) {
+func (r *router) addDomain(
+	ctx context.Context,
+	domain string,
+	isSuffix bool,
+	record string,
+	upstream *config.Upstream,
+	idx int,
+) {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "server.router").
@@ -138,7 +145,7 @@ func (node *routerNode) searchSegments(segments []string) *routerMatched {
 	}
 }
 
-func (node *routerNode) addDomain(domain string, isSuffix bool, upstream config.Upstream, idx int) {
+func (node *routerNode) addDomain(domain string, isSuffix bool, upstream *config.Upstream, idx int) {
 	segments := domainToSegments(domain)
 	curr := node
 	for _, segment := range segments {

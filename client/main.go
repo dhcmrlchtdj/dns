@@ -28,16 +28,16 @@ func GetByUpstream(ctx context.Context, upstream *config.Upstream) DnsResolver {
 		return &BlockByNxdomain{}
 	}
 	if upstream.Ipv4 != "" {
-		return createIpv4Resolver(ctx, upstream)
+		return createIpv4Resolver(ctx, upstream.Ipv4)
 	}
 	if upstream.Ipv6 != "" {
-		return createIpv6Resolver(ctx, upstream)
+		return createIpv6Resolver(ctx, upstream.Ipv6)
 	}
 	if upstream.Udp != "" {
 		return &Udp{server: upstream.Udp}
 	}
 	if upstream.Doh != "" {
-		return createDohResolver(ctx, upstream)
+		return createDohResolver(ctx, upstream.Doh, upstream.DohProxy)
 	}
 
 	zerolog.Ctx(ctx).Error().Str("module", "client.main").Msg("no upstream")

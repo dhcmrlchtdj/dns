@@ -9,8 +9,6 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
-
-	"github.com/dhcmrlchtdj/godns/config"
 )
 
 type Doh struct {
@@ -18,20 +16,20 @@ type Doh struct {
 	httpClient *http.Client
 }
 
-func createDohResolver(ctx context.Context, upstream *config.Upstream) *Doh {
+func createDohResolver(ctx context.Context, doh string, dohProxy string) *Doh {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "client.doh").
 		Logger()
 
-	cacheKey := upstream.Doh + "|" + upstream.DohProxy
+	cacheKey := doh + "|" + dohProxy
 	if client, found := resolverCache.Load(cacheKey); found {
 		logger.Trace().Msg("get resolver from cache")
 		return client.(*Doh)
 	} else {
 		httpClient := new(http.Client)
-		if len(upstream.DohProxy) > 0 {
-			proxyUrl, err := url.Parse(upstream.DohProxy)
+		if len(dohProxy) > 0 {
+			proxyUrl, err := url.Parse(dohProxy)
 			if err != nil {
 				panic(err)
 			}
@@ -39,7 +37,7 @@ func createDohResolver(ctx context.Context, upstream *config.Upstream) *Doh {
 				Proxy: http.ProxyURL(proxyUrl),
 			}
 		}
-		client := &Doh{server: upstream.Doh, httpClient: httpClient}
+		client := &Doh{server: doh, httpClient: httpClient}
 		resolverCache.Store(cacheKey, client)
 		logger.Trace().Msg("new resolver created")
 		return client

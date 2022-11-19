@@ -6,8 +6,6 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
-
-	"github.com/dhcmrlchtdj/godns/config"
 )
 
 type Ipv4 struct {
@@ -30,19 +28,18 @@ func (ip *Ipv4) Resolve(ctx context.Context, question dns.Question, dnssec bool)
 	return []dns.RR{rr}, nil
 }
 
-func createIpv4Resolver(ctx context.Context, upstream *config.Upstream) *Ipv4 {
+func createIpv4Resolver(ctx context.Context, ip string) *Ipv4 {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "client.ipv4").
 		Logger()
 
-	cacheKey := upstream.Ipv4
-	if client, found := resolverCache.Load(cacheKey); found {
+	if client, found := resolverCache.Load(ip); found {
 		logger.Trace().Msg("get resolver from cache")
 		return client.(*Ipv4)
 	} else {
-		client := &Ipv4{ip: net.ParseIP(upstream.Ipv4)}
-		resolverCache.Store(cacheKey, client)
+		client := &Ipv4{ip: net.ParseIP(ip)}
+		resolverCache.Store(ip, client)
 		logger.Trace().Msg("new resolver created")
 		return client
 	}
