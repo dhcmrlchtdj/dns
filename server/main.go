@@ -4,8 +4,10 @@ import (
 	"context"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"sync"
+	"syscall"
 
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
@@ -25,11 +27,33 @@ func NewDnsServer() *DnsServer {
 	server := new(DnsServer)
 	server.router.defaultRouter = new(routerNode)
 	server.router.recordRouter = make(map[uint16]*routerNode)
-
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	server.ctx = logger.WithContext(context.Background())
-
 	return server
+}
+
+func (s *DnsServer) SetupContext() {
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.ctx = logger.WithContext(ctx)
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-c
+		logger.Info().
+			Str("module", "server.main").
+			Str("signal", sig.String()).
+			Msg("DNS server is stopping")
+		cancel()
+		err := s.dnsServer.Shutdown()
+		if err != nil {
+			logger.Error().
+				Str("module", "server.main").
+				Stack().
+				Err(err).
+				Send()
+			panic(err)
+		}
+	}()
 }
 
 func (s *DnsServer) SetupRouter() {
@@ -60,11 +84,12 @@ func (s *DnsServer) SetupServer() {
 }
 
 func (s *DnsServer) Start() {
-	s.cleanupExpiredCache()
+	go s.cleanupExpiredCache()
 	if err := s.dnsServer.ListenAndServe(); err != nil {
 		zerolog.Ctx(s.ctx).
 			Error().
 			Str("module", "server.main").
+			Stack().
 			Err(err).
 			Send()
 		panic(err)

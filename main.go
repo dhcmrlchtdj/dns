@@ -1,10 +1,6 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	_ "net/http/pprof"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 
@@ -12,18 +8,13 @@ import (
 )
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
-
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack // nolint:reassign
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	dnsServer := server.NewDnsServer()
+	dnsServer.SetupContext()
 	dnsServer.ParseArgs()
-
 	zerolog.SetGlobalLevel(string2level(dnsServer.Config.LogLevel))
-
 	dnsServer.SetupRouter()
 	dnsServer.SetupServer()
 	dnsServer.Start()

@@ -46,7 +46,7 @@ func (c *Config) LoadConfigFile(ctx context.Context, file string) {
 
 	f, err := os.Open(file)
 	if err != nil {
-		logger.Error().Err(err).Send()
+		logger.Error().Stack().Err(err).Send()
 		panic(err)
 	}
 	defer f.Close()
@@ -54,14 +54,14 @@ func (c *Config) LoadConfigFile(ctx context.Context, file string) {
 	dec := json.NewDecoder(f)
 	dec.UseNumber()
 	if err := dec.Decode(c); err != nil {
-		logger.Error().Err(err).Send()
+		logger.Error().Stack().Err(err).Send()
 		panic(err)
 	}
 
 	if len(c.Rule) > 0 {
 		for _, rule := range c.Rule {
 			if err := rule.IsValid(); err != nil {
-				logger.Error().Err(err).Send()
+				logger.Error().Stack().Err(err).Send()
 				panic(err)
 			}
 		}

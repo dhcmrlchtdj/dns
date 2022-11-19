@@ -15,15 +15,15 @@ type cachedAnswer struct {
 }
 
 func (s *DnsServer) cleanupExpiredCache() {
+	logger := zerolog.Ctx(s.ctx).
+		With().
+		Str("module", "server.cache.cleanup").
+		Logger()
+
 	ticker := time.NewTicker(time.Minute)
-
-	go func() {
-		logger := zerolog.Ctx(s.ctx).
-			With().
-			Str("module", "server.cache.cleanup").
-			Logger()
-
-		for range ticker.C {
+	for {
+		select {
+		case <-ticker.C:
 			logger.Trace().Msg("cleaning")
 			s.cache.Range(func(key any, val any) bool {
 				cached, ok := val.(*cachedAnswer)
@@ -43,11 +43,14 @@ func (s *DnsServer) cleanupExpiredCache() {
 				return true
 			})
 			logger.Trace().Msg("cleaned")
+		case <-s.ctx.Done():
+			ticker.Stop()
+			return
 		}
-	}()
+	}
 }
 
-func (s *DnsServer) cacheSet(ctx context.Context,key string, answer []dns.RR) {
+func (s *DnsServer) cacheSet(ctx context.Context, key string, answer []dns.RR) {
 	if len(answer) == 0 {
 		return
 	}

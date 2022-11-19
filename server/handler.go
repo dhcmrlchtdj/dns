@@ -39,7 +39,7 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 
 	err := w.WriteMsg(reply)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to write reply")
+		logger.Error().Stack().Err(err).Msg("failed to write reply")
 	}
 }
 
@@ -104,7 +104,7 @@ func (s *DnsServer) Query(ctx context.Context, reply *dns.Msg) {
 				Msg("resolved")
 		} else {
 			reply.Rcode = dns.RcodeServerFailure
-			logger.Error().Err(err).Msg("unknown error")
+			logger.Error().Stack().Err(err).Msg("unknown error")
 		}
 	}
 }

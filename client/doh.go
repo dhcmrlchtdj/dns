@@ -56,7 +56,7 @@ func (s *Doh) Resolve(ctx context.Context, question dns.Question, dnssec bool) (
 
 	req, err := http.NewRequestWithContext(ctx, "GET", s.server, http.NoBody)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to create request")
+		logger.Error().Stack().Err(err).Msg("failed to create request")
 		return nil, err
 	}
 
@@ -72,14 +72,14 @@ func (s *Doh) Resolve(ctx context.Context, question dns.Question, dnssec bool) (
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to send request")
+		logger.Error().Stack().Err(err).Msg("failed to send request")
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var r dohResponse
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		logger.Error().Err(err).Msg("failed to parse response")
+		logger.Error().Stack().Err(err).Msg("failed to parse response")
 		return nil, err
 	}
 
@@ -107,6 +107,7 @@ func (s *Doh) Resolve(ctx context.Context, question dns.Question, dnssec bool) (
 		rr, err := dns.NewRR(record)
 		if err != nil {
 			logger.Error().
+				Stack().
 				Err(err).
 				Str("record", record).
 				Msg("failed to parse record")
