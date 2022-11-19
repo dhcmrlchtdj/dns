@@ -108,7 +108,7 @@ func (s *DnsServer) cacheResolve(ctx context.Context, key string, answer []dns.R
 		answer:  answer,
 		expired: time.Now().Add(time.Duration(ttl) * time.Second),
 	}
-	deferredAnswer.Resolve(ans)
+	deferredAnswer.Resolve(&ans)
 
 	logger.Trace().
 		Uint32("TTL", ttl).
@@ -135,7 +135,7 @@ func (s *DnsServer) cacheReject(ctx context.Context, key string, rcode int) {
 		return
 	}
 
-	deferredAnswer.Reject(rcode)
+	deferredAnswer.Reject(&rcode)
 	s.cache.Delete(key)
 
 	logger.Trace().

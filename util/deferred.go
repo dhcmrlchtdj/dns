@@ -18,16 +18,16 @@ func MakeDeferred[T any, E any]() *Deferred[T, E] {
 	return &deferred
 }
 
-func (d *Deferred[T, E]) Resolve(val T) {
+func (d *Deferred[T, E]) Resolve(val *T) {
 	d.once.Do(func() {
-		d.val = &val
+		d.val = val
 		close(d.fulfilled)
 	})
 }
 
-func (d *Deferred[T, E]) Reject(err E) {
+func (d *Deferred[T, E]) Reject(err *E) {
 	d.once.Do(func() {
-		d.err = &err
+		d.err = err
 		close(d.fulfilled)
 	})
 }
