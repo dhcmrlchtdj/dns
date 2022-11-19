@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/client"
+	"github.com/dhcmrlchtdj/godns/util"
 )
 
 func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
@@ -32,7 +33,7 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 		Str("opcode", dns.OpcodeToString[request.Opcode]).
 		Msg("receive request")
 	if request.Opcode == dns.OpcodeQuery {
-		s.Query(ctx, reply)
+		s.query(ctx, reply)
 	} else {
 		reply.Rcode = dns.RcodeNotImplemented
 	}
@@ -43,7 +44,7 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 	}
 }
 
-func (s *DnsServer) Query(ctx context.Context, reply *dns.Msg) {
+func (s *DnsServer) query(ctx context.Context, reply *dns.Msg) {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "server.handler").
@@ -66,10 +67,14 @@ func (s *DnsServer) Query(ctx context.Context, reply *dns.Msg) {
 
 	// from cache
 	cacheKey := question.String()
-	ans := s.cacheGet(ctx, cacheKey)
-	if ans != nil {
+	answer, rcode := s.cacheGet(ctx, cacheKey)
+	if rcode != nil {
+		reply.Rcode = *rcode
 		logger.Trace().Msg("from cache")
-		reply.Answer = ans
+		return
+	} else if answer != nil {
+		reply.Answer = answer
+		logger.Trace().Msg("from cache")
 		return
 	}
 
@@ -89,12 +94,15 @@ func (s *DnsServer) Query(ctx context.Context, reply *dns.Msg) {
 		return
 	}
 
+	deferred := util.MakeDeferred[cachedAnswer, int]()
+	s.cacheSet(ctx, cacheKey, deferred)
+
 	// from upstream
 	ans, err := resolver.Resolve(ctx, question, reply.IsEdns0() != nil)
 	if err == nil {
 		reply.Answer = ans
-		s.cacheSet(ctx, cacheKey, ans)
 		logger.Trace().Msg("resolved")
+		s.cacheResolve(ctx, cacheKey, ans)
 	} else {
 		var errRcode *client.ErrDnsResponse
 		if errors.As(err, &errRcode) {
@@ -106,5 +114,6 @@ func (s *DnsServer) Query(ctx context.Context, reply *dns.Msg) {
 			reply.Rcode = dns.RcodeServerFailure
 			logger.Error().Stack().Err(err).Msg("unknown error")
 		}
+		s.cacheReject(ctx, cacheKey, reply.Rcode)
 	}
 }
