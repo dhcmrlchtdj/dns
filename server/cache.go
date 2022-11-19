@@ -41,6 +41,8 @@ func (s *DnsServer) cacheGet(ctx context.Context, key string) ([]dns.RR, *int) {
 
 	cached, rcode := deferredAnswer.Wait()
 	if rcode != nil {
+		s.cache.Delete(key)
+		logger.Trace().Str("Rcode", dns.RcodeToString[*rcode]).Msg("rcode")
 		return nil, rcode
 	}
 
@@ -136,7 +138,9 @@ func (s *DnsServer) cacheReject(ctx context.Context, key string, rcode int) {
 	}
 
 	deferredAnswer.Reject(&rcode)
+
 	s.cache.Delete(key)
+	logger.Trace().Str("Rcode", dns.RcodeToString[rcode]).Msg("rcode")
 
 	logger.Trace().
 		Int("rcode", rcode).
@@ -166,6 +170,8 @@ func (s *DnsServer) cleanupExpiredCache() {
 
 				cached, rcode := deferredAnswer.Wait()
 				if rcode != nil {
+					s.cache.Delete(key)
+					logger.Trace().Str("Rcode", dns.RcodeToString[*rcode]).Msg("rcode")
 					return true
 				}
 
