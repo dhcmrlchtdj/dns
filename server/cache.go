@@ -20,7 +20,7 @@ func (s *DnsServer) cleanupExpiredCache() {
 		Str("module", "server.cache.cleanup").
 		Logger()
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Minute * 10)
 	for {
 		select {
 		case <-ticker.C:
@@ -55,24 +55,30 @@ func (s *DnsServer) cacheSet(ctx context.Context, key string, answer []dns.RR) {
 		return
 	}
 
-	minTtl := answer[0].Header().Ttl
+	// set ttl to the minimum ttl among all answers
+	ttl := answer[0].Header().Ttl
 	for _, ans := range answer {
 		currTtl := ans.Header().Ttl
-		if currTtl < minTtl {
-			minTtl = currTtl
+		if currTtl < ttl {
+			ttl = currTtl
 		}
+	}
+	// limit the max ttl to 1 hour
+	maxTtl := uint32(60 * 60)
+	if ttl > maxTtl {
+		ttl = maxTtl
 	}
 
 	val := cachedAnswer{
 		answer:  answer,
-		expired: time.Now().Add(time.Duration(minTtl) * time.Second),
+		expired: time.Now().Add(time.Duration(ttl) * time.Second),
 	}
 
 	zerolog.Ctx(ctx).
 		Trace().
 		Str("module", "server.cache").
 		Str("key", key).
-		Uint32("TTL", minTtl).
+		Uint32("TTL", ttl).
 		Msg("added")
 	s.cache.Store(key, &val)
 }
