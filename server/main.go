@@ -62,7 +62,6 @@ func (s *DnsServer) SetupRouter() {
 		Str("module", "server.main").
 		Msg("loading config")
 	s.router.addRules(s.ctx, s.Config.Rule)
-	s.Config.Rule = nil
 }
 
 func (s *DnsServer) SetupServer() {
