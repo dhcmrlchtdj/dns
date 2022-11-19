@@ -136,6 +136,7 @@ func (s *DnsServer) cacheReject(ctx context.Context, key string, rcode int) {
 	}
 
 	deferredAnswer.Reject(rcode)
+	s.cache.Delete(key)
 
 	logger.Trace().
 		Int("rcode", rcode).
