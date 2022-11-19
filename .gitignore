@@ -1,4 +1,4 @@
-build/
+_build/
 aur/godns/
 aur/pkg/
 aur/src/

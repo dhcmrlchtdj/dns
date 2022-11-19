@@ -3,10 +3,10 @@ package util
 import "sync"
 
 type Deferred[T any, E any] struct {
-	fulfilled chan struct{}
-	once      sync.Once
 	val       *T
 	err       *E
+	fulfilled chan struct{}
+	once      sync.Once
 }
 
 func MakeDeferred[T any, E any]() *Deferred[T, E] {
