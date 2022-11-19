@@ -1,10 +1,11 @@
 package client
 
 import (
+	"context"
 	"net"
 
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/config"
 )
@@ -13,8 +14,9 @@ type Ipv6 struct {
 	ip net.IP
 }
 
-func (ip *Ipv6) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
-	logger := log.With().
+func (ip *Ipv6) Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error) {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.ipv6").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).
@@ -28,8 +30,9 @@ func (ip *Ipv6) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	return []dns.RR{rr}, nil
 }
 
-func createIpv6Resolver(upstream *config.Upstream) *Ipv6 {
-	logger := log.With().
+func createIpv6Resolver(ctx context.Context, upstream *config.Upstream) *Ipv6 {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.ipv6").
 		Logger()
 

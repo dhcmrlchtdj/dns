@@ -1,10 +1,11 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type Config struct {
@@ -34,12 +35,18 @@ type Upstream struct {
 	DohProxy string `json:"doh_proxy,omitempty"`
 }
 
-func (c *Config) LoadConfigFile(file string) {
-	log.Info().Str("module", "config").Str("path", file).Msg("load config")
+func (c *Config) LoadConfigFile(ctx context.Context, file string) {
+	logger := zerolog.Ctx(ctx).
+		With().
+		Str("module", "config").
+		Str("path", file).
+		Logger()
+
+	logger.Info().Msg("load config")
 
 	f, err := os.Open(file)
 	if err != nil {
-		log.Error().Str("module", "server.config").Str("path", file).Err(err).Send()
+		logger.Error().Err(err).Send()
 		panic(err)
 	}
 	defer f.Close()
@@ -47,14 +54,14 @@ func (c *Config) LoadConfigFile(file string) {
 	dec := json.NewDecoder(f)
 	dec.UseNumber()
 	if err := dec.Decode(c); err != nil {
-		log.Error().Str("module", "config").Str("path", file).Err(err).Send()
+		logger.Error().Err(err).Send()
 		panic(err)
 	}
 
 	if len(c.Rule) > 0 {
 		for _, rule := range c.Rule {
 			if err := rule.IsValid(); err != nil {
-				log.Error().Str("module", "config").Str("path", file).Err(err).Send()
+				logger.Error().Err(err).Send()
 				panic(err)
 			}
 		}

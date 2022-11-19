@@ -12,7 +12,7 @@ func (s *DnsServer) ParseArgs() {
 	flag.Parse()
 
 	if len(*configFile) > 0 {
-		s.Config.LoadConfigFile(*configFile)
+		s.Config.LoadConfigFile(s.ctx, *configFile)
 	}
 
 	if len(*host) > 0 {

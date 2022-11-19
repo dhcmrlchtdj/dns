@@ -1,10 +1,11 @@
 package server
 
 import (
+	"context"
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/config"
 )
@@ -26,8 +27,9 @@ type routerMatched struct {
 
 ///
 
-func (r *router) search(domain string, record uint16) *config.Upstream {
-	logger := log.With().
+func (r *router) search(ctx context.Context, domain string, record uint16) *config.Upstream {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "server.router").
 		Str("domain", domain).
 		Str("record", dns.TypeToString[record]).
@@ -70,19 +72,20 @@ func (r *router) search(domain string, record uint16) *config.Upstream {
 	return nil
 }
 
-func (r *router) addRules(rules []*config.Rule) {
+func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
 	for idx, rule := range rules {
 		for _, domain := range rule.Pattern.Domain {
-			r.addDomain(domain, false, rule.Pattern.Record, rule.Upstream, idx)
+			r.addDomain(ctx, domain, false, rule.Pattern.Record, rule.Upstream, idx)
 		}
 		for _, domain := range rule.Pattern.Suffix {
-			r.addDomain(domain, true, rule.Pattern.Record, rule.Upstream, idx)
+			r.addDomain(ctx, domain, true, rule.Pattern.Record, rule.Upstream, idx)
 		}
 	}
 }
 
-func (r *router) addDomain(domain string, isSuffix bool, record string, upstream config.Upstream, idx int) {
-	logger := log.With().
+func (r *router) addDomain(ctx context.Context, domain string, isSuffix bool, record string, upstream config.Upstream, idx int) {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "server.router").
 		Str("domain", domain).
 		Bool("isSuffix", isSuffix).

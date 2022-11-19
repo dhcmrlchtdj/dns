@@ -1,10 +1,11 @@
 package client
 
 import (
+	"context"
 	"net"
 
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/config"
 )
@@ -13,8 +14,9 @@ type Ipv4 struct {
 	ip net.IP
 }
 
-func (ip *Ipv4) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
-	logger := log.With().
+func (ip *Ipv4) Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error) {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.ipv4").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).
@@ -28,8 +30,9 @@ func (ip *Ipv4) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
 	return []dns.RR{rr}, nil
 }
 
-func createIpv4Resolver(upstream *config.Upstream) *Ipv4 {
-	logger := log.With().
+func createIpv4Resolver(ctx context.Context, upstream *config.Upstream) *Ipv4 {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.ipv4").
 		Logger()
 

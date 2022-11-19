@@ -1,14 +1,17 @@
 package client
 
 import (
+	"context"
+
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type BlockByNodata struct{}
 
-func (*BlockByNodata) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
-	log.Debug().
+func (*BlockByNodata) Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error) {
+	zerolog.Ctx(ctx).
+		Debug().
 		Str("module", "client.block.nodata").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).
@@ -18,8 +21,9 @@ func (*BlockByNodata) Resolve(question dns.Question, dnssec bool) ([]dns.RR, err
 
 type BlockByNxdomain struct{}
 
-func (*BlockByNxdomain) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
-	log.Debug().
+func (*BlockByNxdomain) Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error) {
+	zerolog.Ctx(ctx).
+		Debug().
 		Str("module", "client.block.nxdomain").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).

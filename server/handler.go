@@ -1,18 +1,25 @@
 package server
 
 import (
+	"context"
 	"errors"
 
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/client"
 )
 
 func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
-	logger := log.With().
-		Str("module", "server.handler").
+	loggerWithId := zerolog.Ctx(s.ctx).
+		With().
 		Uint16("request_id", request.Id).
+		Logger()
+	ctx := loggerWithId.WithContext(s.ctx)
+
+	logger := loggerWithId.
+		With().
+		Str("module", "server.handler").
 		Logger()
 
 	reply := new(dns.Msg)
@@ -25,7 +32,7 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 		Str("opcode", dns.OpcodeToString[request.Opcode]).
 		Msg("receive request")
 	if request.Opcode == dns.OpcodeQuery {
-		s.Query(reply)
+		s.Query(ctx, reply)
 	} else {
 		reply.Rcode = dns.RcodeNotImplemented
 	}
@@ -36,10 +43,10 @@ func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {
 	}
 }
 
-func (s *DnsServer) Query(reply *dns.Msg) {
-	logger := log.With().
+func (s *DnsServer) Query(ctx context.Context, reply *dns.Msg) {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "server.handler").
-		Uint16("request_id", reply.Id).
 		Logger()
 
 	if len(reply.Question) != 1 {
@@ -59,14 +66,14 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 
 	// from cache
 	cacheKey := question.String()
-	ans := s.cacheGet(cacheKey)
+	ans := s.cacheGet(ctx, cacheKey)
 	if ans != nil {
 		logger.Trace().Msg("from cache")
 		reply.Answer = ans
 		return
 	}
 
-	upstream := s.router.search(question.Name, question.Qtype)
+	upstream := s.router.search(ctx, question.Name, question.Qtype)
 
 	// no upstream
 	if upstream == nil {
@@ -75,7 +82,7 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 		return
 	}
 	// no resolver
-	resolver := client.GetByUpstream(upstream)
+	resolver := client.GetByUpstream(ctx, upstream)
 	if resolver == nil {
 		logger.Error().Msg("no resolver")
 		reply.Rcode = dns.RcodeNotImplemented
@@ -83,10 +90,10 @@ func (s *DnsServer) Query(reply *dns.Msg) {
 	}
 
 	// from upstream
-	ans, err := resolver.Resolve(question, reply.IsEdns0() != nil)
+	ans, err := resolver.Resolve(ctx, question, reply.IsEdns0() != nil)
 	if err == nil {
 		reply.Answer = ans
-		s.cacheSet(cacheKey, ans)
+		s.cacheSet(ctx, cacheKey, ans)
 		logger.Trace().Msg("resolved")
 	} else {
 		var errRcode *client.ErrDnsResponse

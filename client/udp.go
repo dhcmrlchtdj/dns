@@ -1,16 +1,19 @@
 package client
 
 import (
+	"context"
+
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type Udp struct {
 	server string
 }
 
-func (u *Udp) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
-	logger := log.With().
+func (u *Udp) Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error) {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.udp").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).

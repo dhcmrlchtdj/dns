@@ -1,13 +1,14 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/config"
 )
@@ -17,8 +18,9 @@ type Doh struct {
 	httpClient *http.Client
 }
 
-func createDohResolver(upstream *config.Upstream) *Doh {
-	logger := log.With().
+func createDohResolver(ctx context.Context, upstream *config.Upstream) *Doh {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.doh").
 		Logger()
 
@@ -44,14 +46,15 @@ func createDohResolver(upstream *config.Upstream) *Doh {
 	}
 }
 
-func (s *Doh) Resolve(question dns.Question, dnssec bool) ([]dns.RR, error) {
-	logger := log.With().
+func (s *Doh) Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error) {
+	logger := zerolog.Ctx(ctx).
+		With().
 		Str("module", "client.doh").
 		Str("domain", question.Name).
 		Str("record", dns.TypeToString[question.Qtype]).
 		Logger()
 
-	req, err := http.NewRequest("GET", s.server, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.server, http.NoBody)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to create request")
 		return nil, err

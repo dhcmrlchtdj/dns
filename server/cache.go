@@ -1,11 +1,12 @@
 package server
 
 import (
+	"context"
 	"math"
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 type cachedAnswer struct {
@@ -17,7 +18,10 @@ func (s *DnsServer) cleanupExpiredCache() {
 	ticker := time.NewTicker(time.Minute)
 
 	go func() {
-		logger := log.With().Str("module", "server.cache.cleanup").Logger()
+		logger := zerolog.Ctx(s.ctx).
+			With().
+			Str("module", "server.cache.cleanup").
+			Logger()
 
 		for range ticker.C {
 			logger.Trace().Msg("cleaning")
@@ -43,7 +47,7 @@ func (s *DnsServer) cleanupExpiredCache() {
 	}()
 }
 
-func (s *DnsServer) cacheSet(key string, answer []dns.RR) {
+func (s *DnsServer) cacheSet(ctx context.Context,key string, answer []dns.RR) {
 	if len(answer) == 0 {
 		return
 	}
@@ -61,7 +65,8 @@ func (s *DnsServer) cacheSet(key string, answer []dns.RR) {
 		expired: time.Now().Add(time.Duration(minTtl) * time.Second),
 	}
 
-	log.Trace().
+	zerolog.Ctx(ctx).
+		Trace().
 		Str("module", "server.cache").
 		Str("key", key).
 		Uint32("TTL", minTtl).
@@ -69,8 +74,12 @@ func (s *DnsServer) cacheSet(key string, answer []dns.RR) {
 	s.cache.Store(key, &val)
 }
 
-func (s *DnsServer) cacheGet(key string) []dns.RR {
-	logger := log.With().Str("module", "server.cache").Str("key", key).Logger()
+func (s *DnsServer) cacheGet(ctx context.Context, key string) []dns.RR {
+	logger := zerolog.Ctx(ctx).
+		With().
+		Str("module", "server.cache").
+		Str("key", key).
+		Logger()
 
 	val, found := s.cache.Load(key)
 	if !found {
