@@ -25,8 +25,7 @@ type DnsServer struct {
 
 func NewDnsServer() *DnsServer {
 	server := new(DnsServer)
-	server.router.defaultRouter = new(routerNode)
-	server.router.recordRouter = make(map[uint16]*routerNode)
+	server.router.setup()
 	return server
 }
 

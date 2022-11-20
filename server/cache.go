@@ -147,7 +147,6 @@ func (s *DnsServer) cacheReject(ctx context.Context, key string, rcode int) {
 
 	s.cache.Delete(key)
 	logger.Trace().Str("rcode", dns.RcodeToString[rcode]).Msg("rcode")
-
 }
 
 ///

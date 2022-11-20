@@ -11,21 +11,79 @@ import (
 )
 
 type router struct {
-	defaultRouter *routerNode
-	recordRouter  map[uint16]*routerNode
+	domain                 *routerNode
+	domainSuffix           *routerNode
+	domainWithRecord       map[uint16]*routerNode
+	domainSuffixWithRecord map[uint16]*routerNode
 }
 type routerNode struct {
-	next   map[string]*routerNode
-	domain *routerMatched
-	suffix *routerMatched
+	next    map[string]*routerNode
+	matched *routerMatched
 }
 type routerMatched struct {
+	priority int // smaller means higher priority
 	upstream *config.Upstream
-	isSuffix bool
-	index    int
 }
 
 ///
+
+func (r *router) setup() {
+	r.domain = new(routerNode)
+	r.domainSuffix = new(routerNode)
+	r.domainWithRecord = make(map[uint16]*routerNode)
+	r.domainSuffixWithRecord = make(map[uint16]*routerNode)
+}
+
+func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
+	for priority, rule := range rules {
+		for _, domain := range rule.Pattern.Domain {
+			r.addDomain(ctx, priority, domain, false, rule.Pattern.Record, &rule.Upstream)
+		}
+		for _, domain := range rule.Pattern.Suffix {
+			r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+		}
+	}
+}
+
+func (r *router) addDomain(
+	ctx context.Context,
+	priority int,
+	domain string,
+	isSuffix bool,
+	record string,
+	upstream *config.Upstream,
+) {
+	zerolog.Ctx(ctx).
+		Trace().
+		Str("module", "server.router").
+		Int("priority", priority).
+		Str("domain", domain).
+		Bool("isSuffix", isSuffix).
+		Str("record", record).
+		Msg("added")
+
+	if len(record) > 0 {
+		recordRouter := r.domainWithRecord
+		if isSuffix {
+			recordRouter = r.domainSuffixWithRecord
+		}
+
+		recordType := dns.StringToType[record]
+		node, found := recordRouter[recordType]
+		if !found {
+			node = new(routerNode)
+			recordRouter[recordType] = node
+		}
+
+		node.addDomain(priority, domain, upstream)
+	} else {
+		if isSuffix {
+			r.domainSuffix.addDomain(priority, domain, upstream)
+		} else {
+			r.domain.addDomain(priority, domain, upstream)
+		}
+	}
+}
 
 func (r *router) search(ctx context.Context, domain string, record uint16) *config.Upstream {
 	logger := zerolog.Ctx(ctx).
@@ -35,117 +93,76 @@ func (r *router) search(ctx context.Context, domain string, record uint16) *conf
 		Str("record", dns.TypeToString[record]).
 		Logger()
 
-	logger.Trace().Msg("searching domain")
-
 	segments := domainToSegments(domain)
 
-	m1 := r.recordRouter[record].searchSegments(segments)
-	m2 := r.defaultRouter.searchSegments(segments)
-	if m1 != nil && m2 != nil {
-		if !m1.isSuffix {
-			logger.Trace().Msg("recordRouter, domain")
-			return m1.upstream
-		} else if !m2.isSuffix {
-			logger.Trace().Msg("defaultRouter, domain")
-			return m2.upstream
-		}
-		if m1.index < m2.index {
-			logger.Trace().Msg("recordRouter, higher index")
-			return m1.upstream
-		} else if m2.index < m1.index {
-			logger.Trace().Msg("defaultRouter, higher index")
-			return m2.upstream
-		} else {
-			logger.Trace().Msg("recordRouter, record")
-			return m1.upstream
-		}
-	}
-	if m1 != nil {
-		logger.Trace().Msg("recordRouter")
+	c1, m1 := r.domainWithRecord[record].searchSegments(segments)
+	if m1 != nil && c1 == len(segments) {
+		logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", false).Int("priority", m1.priority)).Bool("found", true).Send()
 		return m1.upstream
 	}
-	if m2 != nil {
-		logger.Trace().Msg("defaultRouter")
+
+	c2, m2 := r.domain.searchSegments(segments)
+	if m2 != nil && c2 == len(segments) {
+		logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", false).Int("priority", m2.priority)).Bool("found", true).Send()
 		return m2.upstream
 	}
-	logger.Trace().Msg("not found")
+
+	c3, m3 := r.domainSuffixWithRecord[record].searchSegments(segments)
+	c4, m4 := r.domainSuffix.searchSegments(segments)
+	if m3 != nil && m4 != nil {
+		if c3 < c4 {
+			logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", true).Int("priority", m3.priority)).Bool("found", true).Send()
+			return m3.upstream
+		} else if c3 > c4 {
+			logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", true).Int("priority", m4.priority)).Bool("found", true).Send()
+			return m4.upstream
+		} else if m3.priority <= m4.priority {
+			logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", true).Int("priority", m3.priority)).Bool("found", true).Send()
+			return m3.upstream
+		} else {
+			logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", true).Int("priority", m4.priority)).Bool("found", true).Send()
+			return m4.upstream
+		}
+	} else if m3 != nil {
+		logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", true).Int("priority", m3.priority)).Bool("found", true).Send()
+		return m3.upstream
+	} else if m4 != nil {
+		logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", true).Int("priority", m4.priority)).Bool("found", true).Send()
+		return m4.upstream
+	}
+
+	logger.Trace().Bool("found", false).Send()
 	return nil
-}
-
-func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
-	for idx, rule := range rules {
-		for _, domain := range rule.Pattern.Domain {
-			r.addDomain(ctx, domain, false, rule.Pattern.Record, &rule.Upstream, idx)
-		}
-		for _, domain := range rule.Pattern.Suffix {
-			r.addDomain(ctx, domain, true, rule.Pattern.Record, &rule.Upstream, idx)
-		}
-	}
-}
-
-func (r *router) addDomain(
-	ctx context.Context,
-	domain string,
-	isSuffix bool,
-	record string,
-	upstream *config.Upstream,
-	idx int,
-) {
-	logger := zerolog.Ctx(ctx).
-		With().
-		Str("module", "server.router").
-		Str("domain", domain).
-		Bool("isSuffix", isSuffix).
-		Logger()
-
-	if len(record) > 0 {
-		recordType := dns.StringToType[record]
-		node, found := r.recordRouter[recordType]
-		if !found {
-			node = new(routerNode)
-			r.recordRouter[recordType] = node
-		}
-		logger.Trace().
-			Str("record", record).
-			Msg("add domain to recordRouter")
-		node.addDomain(domain, isSuffix, upstream, idx)
-	} else {
-		logger.Trace().Msg("add domain to defaultRouter")
-		r.defaultRouter.addDomain(domain, isSuffix, upstream, idx)
-	}
 }
 
 ///
 
-func (node *routerNode) searchSegments(segments []string) *routerMatched {
+func (node *routerNode) searchSegments(segments []string) (int, *routerMatched) {
 	if node == nil {
-		return nil
+		return 0, nil
 	}
 
 	curr := node
-	var matched *routerMatched = curr.suffix
+	count := 0
+	var matched *routerMatched = curr.matched
 	for _, segment := range segments {
 		if curr.next == nil {
-			return matched
+			break
 		}
 		next, found := curr.next[segment]
 		if !found {
-			return matched
+			break
 		}
 		curr = next
-		if curr.suffix != nil {
-			matched = curr.suffix
+		if curr.matched != nil {
+			count++
+			matched = curr.matched
 		}
 	}
-
-	if curr.domain != nil {
-		return curr.domain
-	} else {
-		return matched
-	}
+	return count, matched
 }
 
-func (node *routerNode) addDomain(domain string, isSuffix bool, upstream *config.Upstream, idx int) {
+func (node *routerNode) addDomain(priority int, domain string, upstream *config.Upstream) {
 	segments := domainToSegments(domain)
 	curr := node
 	for _, segment := range segments {
@@ -159,14 +176,8 @@ func (node *routerNode) addDomain(domain string, isSuffix bool, upstream *config
 		}
 		curr = next
 	}
-	if isSuffix {
-		if curr.suffix == nil || curr.suffix.index > idx {
-			curr.suffix = &routerMatched{upstream, true, idx}
-		}
-	} else {
-		if curr.domain == nil || curr.domain.index > idx {
-			curr.domain = &routerMatched{upstream, false, idx}
-		}
+	if curr.matched == nil || curr.matched.priority > priority {
+		curr.matched = &routerMatched{priority, upstream}
 	}
 }
 
