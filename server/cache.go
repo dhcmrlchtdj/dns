@@ -74,7 +74,7 @@ func (s *DnsServer) cacheSet(ctx context.Context, key string, deferredAnswer *de
 		Str("key", key).
 		Logger()
 
-	s.cache.Store(key, deferredAnswer)
+	s.cache.LoadOrStore(key, deferredAnswer)
 
 	logger.Trace().Msg("added")
 }

@@ -84,12 +84,16 @@ func (s *DnsServer) query(ctx context.Context, reply *dns.Msg) {
 		return
 	}
 
+	deferred := util.MakeDeferred[cachedAnswer, int]()
+	s.cacheSet(ctx, cacheKey, deferred)
+
 	upstream := s.router.search(ctx, question.Name, question.Qtype)
 
 	// no upstream
 	if upstream == nil {
 		logger.Trace().Msg("no upstream")
 		reply.Rcode = dns.RcodeNotImplemented
+		s.cacheReject(ctx, cacheKey, reply.Rcode)
 		return
 	}
 	// no resolver
@@ -97,11 +101,9 @@ func (s *DnsServer) query(ctx context.Context, reply *dns.Msg) {
 	if resolver == nil {
 		logger.Error().Msg("no resolver")
 		reply.Rcode = dns.RcodeNotImplemented
+		s.cacheReject(ctx, cacheKey, reply.Rcode)
 		return
 	}
-
-	deferred := util.MakeDeferred[cachedAnswer, int]()
-	s.cacheSet(ctx, cacheKey, deferred)
 
 	// from upstream
 	ans, err := resolver.Resolve(ctx, question, reply.IsEdns0() != nil)
