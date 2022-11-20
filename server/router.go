@@ -107,16 +107,17 @@ func (r *router) search(ctx context.Context, domain string, record uint16) *conf
 		return m2.upstream
 	}
 
-	c3, m3 := r.domainSuffixWithRecord[record].searchSegments(segments)
-	c4, m4 := r.domainSuffix.searchSegments(segments)
+	_, m3 := r.domainSuffixWithRecord[record].searchSegments(segments)
+	_, m4 := r.domainSuffix.searchSegments(segments)
 	if m3 != nil && m4 != nil {
-		if c3 > c4 {
-			logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", true).Int("priority", m3.priority)).Bool("found", true).Send()
-			return m3.upstream
-		} else if c3 < c4 {
-			logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", true).Int("priority", m4.priority)).Bool("found", true).Send()
-			return m4.upstream
-		} else if m3.priority <= m4.priority {
+		// if c3 > c4 {
+		//     logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", true).Int("priority", m3.priority)).Bool("found", true).Send()
+		//     return m3.upstream
+		// } else if c3 < c4 {
+		//     logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", true).Int("priority", m4.priority)).Bool("found", true).Send()
+		//     return m4.upstream
+		// }
+		if m3.priority <= m4.priority {
 			logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", true).Int("priority", m3.priority)).Bool("found", true).Send()
 			return m3.upstream
 		} else {
