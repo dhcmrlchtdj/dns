@@ -95,14 +95,14 @@ func (r *router) search(ctx context.Context, domain string, record uint16) *conf
 
 	segments := domainToSegments(domain)
 
-	c1, m1 := r.domainWithRecord[record].searchSegments(segments)
-	if m1 != nil && c1 == len(segments) {
+	a1, m1 := r.domainWithRecord[record].searchSegments(segments)
+	if m1 != nil && a1 {
 		logger.Trace().Dict("match", zerolog.Dict().Bool("record", true).Bool("suffix", false).Int("priority", m1.priority)).Bool("found", true).Send()
 		return m1.upstream
 	}
 
-	c2, m2 := r.domain.searchSegments(segments)
-	if m2 != nil && c2 == len(segments) {
+	a2, m2 := r.domain.searchSegments(segments)
+	if m2 != nil && a2 {
 		logger.Trace().Dict("match", zerolog.Dict().Bool("record", false).Bool("suffix", false).Int("priority", m2.priority)).Bool("found", true).Send()
 		return m2.upstream
 	}
@@ -138,31 +138,31 @@ func (r *router) search(ctx context.Context, domain string, record uint16) *conf
 
 ///
 
-func (node *routerNode) searchSegments(segments []string) (int, *routerMatched) {
+func (node *routerNode) searchSegments(segments []string) (bool, *routerMatched) {
 	if node == nil {
-		return 0, nil
+		return false, nil
 	}
 
 	curr := node
-	longestMatch := 0
-	segmentCount := 0
 	var matched *routerMatched = curr.matched
 	for _, segment := range segments {
 		if curr.next == nil {
-			break
+			return false, matched
 		}
 		next, found := curr.next[segment]
 		if !found {
-			break
+			return false, matched
 		}
 		curr = next
-		segmentCount++
-		if curr.matched != nil {
-			longestMatch = segmentCount
+
+		if matched == nil {
+			matched = curr.matched
+		} else if curr.matched != nil &&
+			(curr.matched.priority < matched.priority) {
 			matched = curr.matched
 		}
 	}
-	return longestMatch, matched
+	return true, matched
 }
 
 func (node *routerNode) addDomain(priority int, domain string, upstream *config.Upstream) {
