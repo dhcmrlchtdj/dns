@@ -21,7 +21,7 @@ impl Default for Config {
 		Config {
 			host: default_host(),
 			port: default_port(),
-			log_level: LogLevel::Info,
+			log_level: LogLevel::default(),
 			rule: vec![],
 		}
 	}
@@ -122,12 +122,28 @@ pub enum Pattern {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Upstream {
-	UDP { udp: SocketAddr },
-	TCP { tcp: SocketAddr },
-	DoT { dot: SocketAddr, domain: String },
-	DoH { doh: SocketAddr, domain: String },
-	IPv4 { ipv4: Ipv4Addr },
-	IPv6 { ipv6: Ipv6Addr },
+	UDP {
+		udp: SocketAddr,
+	},
+	TCP {
+		tcp: SocketAddr,
+	},
+	DoT {
+		dot: SocketAddr,
+		domain: String,
+	},
+	DoH {
+		doh: SocketAddr,
+		domain: String,
+		#[serde(skip_serializing_if = "Option::is_none")]
+		socks5_proxy: Option<SocketAddr>,
+	},
+	IPv4 {
+		ipv4: Ipv4Addr,
+	},
+	IPv6 {
+		ipv6: Ipv6Addr,
+	},
 	Special(SpecialUpstream),
 }
 

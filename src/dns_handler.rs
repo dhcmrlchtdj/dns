@@ -79,7 +79,8 @@ impl DnsHandler {
 					tls_config: None,
 					bind_addr: None,
 				},
-				Upstream::DoH { doh, domain } => NameServerConfig {
+				// FIXME: socks5_proxy
+				Upstream::DoH { doh, domain, .. } => NameServerConfig {
 					socket_addr: doh,
 					protocol: Protocol::Https,
 					tls_dns_name: Some(domain),

@@ -1,26 +1,31 @@
 {
-    "host": "127.0.0.1",
-    "port": 0,
-    "log_level": "info",
-    "rule": [
-        {
-            "pattern": { "domain": ["localhost"], "record": "A" },
-            "upstream": { "ipv4": "127.0.0.1" }
-        },
-        {
-            "pattern": { "suffix": [".arpa"] },
-            "upstream": "NODATA"
-        },
-        {
-            "pattern": { "suffix": ["."] },
-            "upstream": {
-                "doh": "1.1.1.1:443",
-                "domain": "cloudflare-dns.com"
-            }
-        },
-        {
-            "pattern": { "suffix": [".cn"] },
-            "upstream": { "udp": "119.29.29.29:53" }
-        }
-    ]
+	"host": "127.0.0.1",
+	"port": 0,
+	"log_level": "info",
+	"rule": [
+		{
+			"pattern": { "domain": ["localhost"], "record": "A" },
+			"upstream": { "ipv4": "127.0.0.1" }
+		},
+		{
+			"pattern": { "suffix": ["."], "record": "AAAA" },
+			"upstream": "NXDOMAIN"
+		},
+		{
+			"pattern": { "suffix": [".arpa"] },
+			"upstream": "NODATA"
+		},
+		{
+			"pattern": { "suffix": ["."] },
+			"upstream": {
+				"doh": "1.1.1.1:443",
+				"domain": "cloudflare-dns.com",
+				"socks5_proxy": "127.0.0.1:1080"
+			}
+		},
+		{
+			"pattern": { "suffix": [".cn"] },
+			"upstream": { "udp": "119.29.29.29:53" }
+		}
+	]
 }
