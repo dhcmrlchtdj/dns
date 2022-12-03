@@ -5,14 +5,14 @@ edition = "2021"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
-anyhow = { version = "1.0.56", features = ["backtrace"] }
-async-trait = "0.1.52"
-clap = { version = "3.1.6", features = ["derive"] }
-futures-io = "0.3.21"
-serde = { version = "1.0.136", features = ["derive"] }
-serde_json = "1.0.79"
-tokio = { version = "1.17.0", features = ["full"] }
+anyhow = { version = "1.0.66", features = ["backtrace"] }
+async-trait = "0.1.59"
+clap = { version = "4.0.29", features = ["derive"] }
+futures-io = "0.3.25"
+serde = { version = "1.0.148", features = ["derive"] }
+serde_json = "1.0.89"
+tokio = { version = "1.22.0", features = ["full"] }
 tokio-socks = "0.5.1"
-tracing = "0.1.32"
-tracing-subscriber = "0.3.10"
-trust-dns-server = { version = "0.21.1", features = ["dns-over-https-rustls", "backtrace"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
+trust-dns-server = { version = "0.22.0", features = ["dns-over-https-rustls", "backtrace"] }

@@ -66,28 +66,24 @@ impl Config {
     }
     fn validate_rule(&self, rule: &Rule) -> Result<()> {
         match &rule.upstream {
-            Upstream::IPv4 { .. } => {
-                match rule.pattern {
-                    Pattern::Domain {
-                        record: Some(r), ..
-                    } if r != RecordType::A => Err(anyhow!("IPv4 should be used with 'A'")),
-                    Pattern::Suffix {
-                        record: Some(r), ..
-                    } if r != RecordType::A => Err(anyhow!("IPv4 should be used with 'A'")),
-                    _ => Ok(()),
-                }
-            }
-            Upstream::IPv6 { .. } => {
-                match rule.pattern {
-                    Pattern::Domain {
-                        record: Some(r), ..
-                    } if r != RecordType::AAAA => Err(anyhow!("IPv6 should be used with 'AAAA'")),
-                    Pattern::Suffix {
-                        record: Some(r), ..
-                    } if r != RecordType::AAAA => Err(anyhow!("IPv6 should be used with 'AAAA'")),
-                    _ => Ok(()),
-                }
-            }
+            Upstream::IPv4 { .. } => match rule.pattern {
+                Pattern::Domain {
+                    record: Some(r), ..
+                } if r != RecordType::A => Err(anyhow!("IPv4 should be used with 'A'")),
+                Pattern::Suffix {
+                    record: Some(r), ..
+                } if r != RecordType::A => Err(anyhow!("IPv4 should be used with 'A'")),
+                _ => Ok(()),
+            },
+            Upstream::IPv6 { .. } => match rule.pattern {
+                Pattern::Domain {
+                    record: Some(r), ..
+                } if r != RecordType::AAAA => Err(anyhow!("IPv6 should be used with 'AAAA'")),
+                Pattern::Suffix {
+                    record: Some(r), ..
+                } if r != RecordType::AAAA => Err(anyhow!("IPv6 should be used with 'AAAA'")),
+                _ => Ok(()),
+            },
             _ => Ok(()),
         }
     }

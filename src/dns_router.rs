@@ -34,7 +34,7 @@ impl DnsRouter {
                 Some(record) => {
                     let node = self.record_router.entry(record).or_insert_with(Node::new);
                     node.add(is_suffix, segments.clone(), rule.upstream.clone(), index);
-                },
+                }
             };
         });
     }
