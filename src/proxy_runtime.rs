@@ -48,9 +48,7 @@ impl RuntimeProvider for ProxyRuntime {
 }
 
 pub struct ProxyTcpStream {
-	enable_proxy: bool,
-	directed: Option<TcpStream>,
-	proxied: Option<Socks5Stream<TcpStream>>,
+	inner: Socks5Stream<TcpStream>,
 }
 
 impl futures_io::AsyncRead for ProxyTcpStream {
@@ -59,23 +57,9 @@ impl futures_io::AsyncRead for ProxyTcpStream {
 		cx: &mut Context<'_>,
 		buf: &mut [u8],
 	) -> Poll<std::io::Result<usize>> {
-		if self.enable_proxy {
-			let mut buf = ReadBuf::new(buf);
-			let polled = AsyncRead::poll_read(
-				Pin::new(&mut self.get_mut().proxied.as_mut().unwrap()),
-				cx,
-				&mut buf,
-			);
-			polled.map_ok(|_| buf.filled().len())
-		} else {
-			let mut buf = ReadBuf::new(buf);
-			let polled = AsyncRead::poll_read(
-				Pin::new(&mut self.get_mut().directed.as_mut().unwrap()),
-				cx,
-				&mut buf,
-			);
-			polled.map_ok(|_| buf.filled().len())
-		}
+		let mut buf = ReadBuf::new(buf);
+		let polled = AsyncRead::poll_read(Pin::new(&mut self.get_mut().inner), cx, &mut buf);
+		polled.map_ok(|_| buf.filled().len())
 	}
 }
 impl futures_io::AsyncWrite for ProxyTcpStream {
@@ -84,33 +68,13 @@ impl futures_io::AsyncWrite for ProxyTcpStream {
 		cx: &mut Context<'_>,
 		buf: &[u8],
 	) -> Poll<std::io::Result<usize>> {
-		if self.enable_proxy {
-			AsyncWrite::poll_write(
-				Pin::new(&mut self.get_mut().proxied.as_mut().unwrap()),
-				cx,
-				buf,
-			)
-		} else {
-			AsyncWrite::poll_write(
-				Pin::new(&mut self.get_mut().directed.as_mut().unwrap()),
-				cx,
-				buf,
-			)
-		}
+		AsyncWrite::poll_write(Pin::new(&mut self.get_mut().inner), cx, buf)
 	}
 	fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-		if self.enable_proxy {
-			AsyncWrite::poll_flush(Pin::new(&mut self.get_mut().proxied.as_mut().unwrap()), cx)
-		} else {
-			AsyncWrite::poll_flush(Pin::new(&mut self.get_mut().directed.as_mut().unwrap()), cx)
-		}
+		AsyncWrite::poll_flush(Pin::new(&mut self.get_mut().inner), cx)
 	}
 	fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
-		if self.enable_proxy {
-			AsyncWrite::poll_shutdown(Pin::new(&mut self.get_mut().proxied.as_mut().unwrap()), cx)
-		} else {
-			AsyncWrite::poll_shutdown(Pin::new(&mut self.get_mut().directed.as_mut().unwrap()), cx)
-		}
+		AsyncWrite::poll_shutdown(Pin::new(&mut self.get_mut().inner), cx)
 	}
 }
 
@@ -120,24 +84,11 @@ impl Connect for ProxyTcpStream {
 		addr: SocketAddr,
 		bind_addr: Option<SocketAddr>,
 	) -> std::io::Result<Self> {
-		if let Some(socks5_proxy) = bind_addr {
-			match Socks5Stream::connect(socks5_proxy, addr).await {
-				Ok(proxied) => Ok(Self {
-					enable_proxy: true,
-					proxied: Some(proxied),
-					directed: None,
-				}),
-				Err(err) => Err(futures_io::Error::new(futures_io::ErrorKind::Other, err)),
-			}
-		} else {
-			match TcpStream::connect("127.0.0.1:8080").await {
-				Ok(directed) => Ok(Self {
-					enable_proxy: false,
-					directed: Some(directed),
-					proxied: None,
-				}),
-				Err(err) => Err(err),
-			}
+		let socks5_proxy =
+			bind_addr.expect("proxy_runtime will only be used when the bind_addr is set.");
+		match Socks5Stream::connect(socks5_proxy, addr).await {
+			Ok(inner) => Ok(Self { inner }),
+			Err(err) => Err(futures_io::Error::new(futures_io::ErrorKind::Other, err)),
 		}
 	}
 }
