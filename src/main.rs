@@ -13,22 +13,22 @@ use crate::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = cli::Args::parse();
-    let config = Config::from_args(args)?;
+	let args = cli::Args::parse();
+	let config = Config::from_args(args)?;
 
-    tracing_subscriber::fmt::fmt()
-        .with_max_level(Level::DEBUG)
-        .init();
+	tracing_subscriber::fmt::fmt()
+		.with_max_level(Level::DEBUG)
+		.init();
 
-    config.validate_rules()?;
+	config.validate_rules()?;
 
-    let mut handler = dns_handler::DnsHandler::new();
-    handler.add_rules(config.rule);
+	let mut handler = dns_handler::DnsHandler::new();
+	handler.add_rules(config.rule);
 
-    let mut dns_server = trust_dns_server::ServerFuture::new(handler);
-    let sock = tokio::net::UdpSocket::bind((config.host, config.port)).await?;
-    dns_server.register_socket(sock);
-    dns_server.block_until_done().await?;
+	let mut dns_server = trust_dns_server::ServerFuture::new(handler);
+	let sock = tokio::net::UdpSocket::bind((config.host, config.port)).await?;
+	dns_server.register_socket(sock);
+	dns_server.block_until_done().await?;
 
-    Ok(())
+	Ok(())
 }
