@@ -4,7 +4,6 @@ mod dns_handler;
 mod dns_router;
 mod log_level;
 mod proxy_runtime;
-mod async_dns_resolver;
 
 use anyhow::Result;
 use clap::Parser;
