@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use trust_dns_server::client::rr::RecordType;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
 	#[serde(default = "default_host")]
 	pub host: String,
@@ -97,13 +97,13 @@ fn default_port() -> u16 {
 	0
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Rule {
 	pub pattern: Pattern,
 	pub upstream: Upstream,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Pattern {
 	Domain {
