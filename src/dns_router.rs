@@ -66,31 +66,33 @@ impl DnsRouter {
 		let segments = domain
 			.split('.')
 			.filter(|x| !x.is_empty())
+			.rev()
 			.enumerate()
 			.collect::<Vec<(usize, &str)>>();
 
-		if let Some((m, len)) = self
+		let r1 = self
 			.domain_record
 			.get(&record_type)
-			.and_then(|n| n.search(&segments))
-		{
+			.and_then(|n| n.search(&segments));
+		if let Some((m, len)) = r1 {
 			if len == segments.len() {
 				return Some(m.upstream);
 			}
 		}
 
-		if let Some((m, len)) = self.domain.search(&segments) {
+		let r2 = self.domain.search(&segments);
+		if let Some((m, len)) = r2 {
 			if len == segments.len() {
 				return Some(m.upstream);
 			}
 		}
 
-		let r1 = self
+		let r3 = self
 			.suffix_record
 			.get(&record_type)
 			.and_then(|n| n.search(&segments));
-		let r2 = self.suffix.search(&segments);
-		match (r1, r2) {
+		let r4 = self.suffix.search(&segments);
+		match (r3, r4) {
 			(None, None) => None,
 			(Some((m, _)), None) | (None, Some((m, _))) => Some(m.upstream),
 			(Some((m1, _)), Some((m2, _))) => Some(if m1.priority >= m2.priority {
@@ -146,18 +148,11 @@ impl Node {
 			match curr.next.get(*segment) {
 				None => break,
 				Some(next) => {
-					match (matched.as_ref(), next.matched.as_ref()) {
-						(None, Some(_)) => {
-							matched = next.matched.clone();
-							longest_match = idx + 1;
-						}
-						(Some(m1), Some(m2)) if m2.priority > m1.priority => {
-							matched = next.matched.clone();
-							longest_match = idx + 1;
-						}
-						_ => (),
-					}
 					curr = next;
+					if curr.matched.is_some() {
+						matched = curr.matched.clone();
+						longest_match += idx + 1;
+					}
 				}
 			};
 		}

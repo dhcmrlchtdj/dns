@@ -1,11 +1,10 @@
 use crate::{
 	config::{Rule, SpecialUpstream, Upstream},
 	dns_router::DnsRouter,
-	proxy_runtime::{ProxyAsyncResolver, ProxyHandle},
 };
 use async_trait::async_trait;
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tracing::{event, Level};
 use trust_dns_server::{
 	authority::MessageResponseBuilder,
@@ -18,6 +17,7 @@ use trust_dns_server::{
 		config::{NameServerConfig, Protocol, ResolverConfig, ResolverOpts},
 		error::ResolveError,
 		lookup::Lookup,
+		TokioAsyncResolver,
 	},
 	server::{Request, RequestHandler, ResponseHandler, ResponseInfo},
 };
@@ -25,14 +25,14 @@ use trust_dns_server::{
 #[derive(Debug)]
 pub struct DnsHandler {
 	router: DnsRouter,
-	clients: Arc<Mutex<HashMap<Upstream, Result<ProxyAsyncResolver, ResolveError>>>>,
+	clients: Arc<RwLock<HashMap<Upstream, Result<TokioAsyncResolver, ResolveError>>>>,
 }
 
 impl DnsHandler {
 	pub fn new() -> Self {
 		Self {
 			router: DnsRouter::new(),
-			clients: Arc::new(Mutex::new(HashMap::new())),
+			clients: Arc::new(RwLock::new(HashMap::new())),
 		}
 	}
 
@@ -44,21 +44,42 @@ impl DnsHandler {
 			.for_each(|(priority, rule)| self.router.add_rule(rule, priority))
 	}
 
-	fn search_upstream(&self, request: &Request) -> Option<Upstream> {
+	fn search_upstream(&self, request: &Request) -> Option<Arc<Upstream>> {
 		let query = request.query();
 		let record_type = query.query_type();
 		let domain = query.name().to_string();
-		let upstream = self.router.search(domain, record_type);
-		upstream.map(|x| (*x).clone())
+		self.router.search(domain, record_type)
 	}
 
-	async fn get_client(&self, upstream: Upstream) -> Result<ProxyAsyncResolver, ResolveError> {
+	async fn get_client(
+		&self,
+		upstream: Arc<Upstream>,
+	) -> Result<TokioAsyncResolver, ResolveError> {
+		let resolver = self.fast_get_client(upstream.clone()).await;
+		if let Some(r) = resolver {
+			r
+		} else {
+			self.slow_get_client(upstream).await
+		}
+	}
+	async fn fast_get_client(
+		&self,
+		upstream: Arc<Upstream>,
+	) -> Option<Result<TokioAsyncResolver, ResolveError>> {
 		let map = self.clients.clone();
-		let mut map = map.lock().await;
-		let resolver = map.entry(upstream.clone()).or_insert_with(|| {
-			let name_server_config = match upstream {
+		let map = map.read().await;
+		map.get(&upstream).map(|x| x.to_owned())
+	}
+	async fn slow_get_client(
+		&self,
+		upstream: Arc<Upstream>,
+	) -> Result<TokioAsyncResolver, ResolveError> {
+		let map = self.clients.clone();
+		let mut map = map.write().await;
+		let resolver = map.entry((*upstream).clone()).or_insert_with(|| {
+			let name_server_config = match upstream.as_ref() {
 				Upstream::UDP { udp } => NameServerConfig {
-					socket_addr: udp,
+					socket_addr: udp.to_owned(),
 					protocol: Protocol::Udp,
 					tls_dns_name: None,
 					trust_nx_responses: true,
@@ -66,7 +87,7 @@ impl DnsHandler {
 					bind_addr: None,
 				},
 				Upstream::TCP { tcp } => NameServerConfig {
-					socket_addr: tcp,
+					socket_addr: tcp.to_owned(),
 					protocol: Protocol::Tcp,
 					tls_dns_name: None,
 					trust_nx_responses: true,
@@ -74,18 +95,22 @@ impl DnsHandler {
 					bind_addr: None,
 				},
 				Upstream::DoT { dot, domain } => NameServerConfig {
-					socket_addr: dot,
+					socket_addr: dot.to_owned(),
 					protocol: Protocol::Tls,
-					tls_dns_name: Some(domain),
+					tls_dns_name: Some(domain.to_owned()),
 					trust_nx_responses: true,
 					tls_config: None,
 					bind_addr: None,
 				},
-				// FIXME: socks5_proxy
-				Upstream::DoH { doh, domain, .. } => NameServerConfig {
-					socket_addr: doh,
+				Upstream::DoH {
+					doh,
+					domain,
+					// socks5_proxy,
+					..
+				} => NameServerConfig {
+					socket_addr: doh.to_owned(),
 					protocol: Protocol::Https,
-					tls_dns_name: Some(domain),
+					tls_dns_name: Some(domain.to_owned()),
 					trust_nx_responses: true,
 					tls_config: None,
 					bind_addr: None,
@@ -95,8 +120,8 @@ impl DnsHandler {
 			let mut resolver_config = ResolverConfig::new();
 			resolver_config.add_name_server(name_server_config);
 			let mut resolver_opts = ResolverOpts::default();
-			resolver_opts.cache_size = 512;
-			ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
+			resolver_opts.cache_size = 128;
+			TokioAsyncResolver::tokio(resolver_config, resolver_opts)
 		});
 		resolver.to_owned()
 	}
@@ -107,7 +132,7 @@ impl DnsHandler {
 		mut response_handle: R,
 	) -> Result<ResponseInfo, std::io::Error> {
 		if let Some(upstream) = self.search_upstream(request) {
-			let result = match upstream {
+			let result = match upstream.as_ref() {
 				Upstream::UDP { .. } => {
 					let resolver = self.get_client(upstream).await?;
 					let query = request.query();
@@ -143,7 +168,7 @@ impl DnsHandler {
 				Upstream::IPv4 { ipv4 } => {
 					if request.query().query_type() == RecordType::A {
 						let query = Query::query(request.query().name().into(), RecordType::A);
-						let result = Lookup::from_rdata(query, RData::A(ipv4));
+						let result = Lookup::from_rdata(query, RData::A(*ipv4));
 						Some(result)
 					} else {
 						None
@@ -152,7 +177,7 @@ impl DnsHandler {
 				Upstream::IPv6 { ipv6 } => {
 					if request.query().query_type() == RecordType::AAAA {
 						let query = Query::query(request.query().name().into(), RecordType::AAAA);
-						let result = Lookup::from_rdata(query, RData::AAAA(ipv6));
+						let result = Lookup::from_rdata(query, RData::AAAA(*ipv6));
 						Some(result)
 					} else {
 						None

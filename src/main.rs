@@ -3,7 +3,6 @@ mod config;
 mod dns_handler;
 mod dns_router;
 mod log_level;
-mod proxy_runtime;
 
 use anyhow::Result;
 use clap::Parser;
@@ -16,9 +15,9 @@ async fn main() -> Result<()> {
 	let args = cli::Args::parse();
 	let config = Config::from_args(args)?;
 
-	tracing_subscriber::fmt::fmt()
-		.with_max_level(Level::DEBUG)
-		.init();
+	// tracing_subscriber::fmt::fmt()
+	//     .with_max_level(Level::DEBUG)
+	//     .init();
 
 	config.validate_rules()?;
 
@@ -29,6 +28,9 @@ async fn main() -> Result<()> {
 	let sock = tokio::net::UdpSocket::bind((config.host, config.port)).await?;
 	dns_server.register_socket(sock);
 	dns_server.block_until_done().await?;
+
+	// todo, graceful shutdown
+	//https://tokio.rs/tokio/topics/shutdown
 
 	Ok(())
 }
