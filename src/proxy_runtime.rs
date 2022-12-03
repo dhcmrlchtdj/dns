@@ -21,9 +21,8 @@ use trust_dns_server::{
 	},
 };
 
-pub type ProxyConnection = GenericConnection;
 pub type ProxyConnectionProvider = GenericConnectionProvider<ProxyRuntime>;
-pub type ProxyAsyncResolver = AsyncResolver<ProxyConnection, ProxyConnectionProvider>;
+pub type ProxyAsyncResolver = AsyncResolver<GenericConnection, ProxyConnectionProvider>;
 
 // AsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
 // ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
@@ -78,16 +77,20 @@ impl futures_io::AsyncWrite for ProxyTcpStream {
 		AsyncWrite::poll_shutdown(Pin::new(&mut self.get_mut().inner), cx)
 	}
 }
+
 #[async_trait::async_trait]
 impl Connect for ProxyTcpStream {
 	async fn connect_with_bind(
 		addr: SocketAddr,
-		_bind_addr: Option<SocketAddr>,
+		bind_addr: Option<SocketAddr>,
 	) -> std::io::Result<Self> {
-		let proxy_addr = ("127.0.0.1", 1080);
-		match Socks5Stream::connect(proxy_addr, addr).await {
-			Ok(inner) => Ok(Self { inner }),
-			Err(err) => Err(futures_io::Error::new(futures_io::ErrorKind::Other, err)),
+		if let Some(socks5_proxy) = bind_addr {
+			match Socks5Stream::connect(socks5_proxy, addr).await {
+				Ok(inner) => Ok(Self { inner }),
+				Err(err) => Err(futures_io::Error::new(futures_io::ErrorKind::Other, err)),
+			}
+		} else {
+			unreachable!()
 		}
 	}
 }

@@ -1,6 +1,7 @@
 use crate::{
 	config::{Rule, SpecialUpstream, Upstream},
 	dns_router::DnsRouter,
+	proxy_runtime::{ProxyAsyncResolver, ProxyHandle},
 };
 use async_trait::async_trait;
 use std::{collections::HashMap, sync::Arc};
@@ -17,7 +18,6 @@ use trust_dns_server::{
 		config::{NameServerConfig, Protocol, ResolverConfig, ResolverOpts},
 		error::ResolveError,
 		lookup::Lookup,
-		TokioAsyncResolver,
 	},
 	server::{Request, RequestHandler, ResponseHandler, ResponseInfo},
 };
@@ -25,7 +25,7 @@ use trust_dns_server::{
 #[derive(Debug)]
 pub struct DnsHandler {
 	router: DnsRouter,
-	clients: Arc<RwLock<HashMap<Upstream, Result<TokioAsyncResolver, ResolveError>>>>,
+	clients: Arc<RwLock<HashMap<Upstream, Result<ProxyAsyncResolver, ResolveError>>>>,
 }
 
 impl DnsHandler {
@@ -54,7 +54,7 @@ impl DnsHandler {
 	async fn get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Result<TokioAsyncResolver, ResolveError> {
+	) -> Result<ProxyAsyncResolver, ResolveError> {
 		let resolver = self.fast_get_client(upstream.clone()).await;
 		if let Some(r) = resolver {
 			r
@@ -65,7 +65,7 @@ impl DnsHandler {
 	async fn fast_get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Option<Result<TokioAsyncResolver, ResolveError>> {
+	) -> Option<Result<ProxyAsyncResolver, ResolveError>> {
 		let map = self.clients.clone();
 		let map = map.read().await;
 		map.get(&upstream).map(|x| x.to_owned())
@@ -73,7 +73,7 @@ impl DnsHandler {
 	async fn slow_get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Result<TokioAsyncResolver, ResolveError> {
+	) -> Result<ProxyAsyncResolver, ResolveError> {
 		let map = self.clients.clone();
 		let mut map = map.write().await;
 		let resolver = map.entry((*upstream).clone()).or_insert_with(|| {
@@ -105,15 +105,14 @@ impl DnsHandler {
 				Upstream::DoH {
 					doh,
 					domain,
-					// socks5_proxy,
-					..
+					socks5_proxy,
 				} => NameServerConfig {
 					socket_addr: doh.to_owned(),
 					protocol: Protocol::Https,
 					tls_dns_name: Some(domain.to_owned()),
 					trust_nx_responses: true,
 					tls_config: None,
-					bind_addr: None,
+					bind_addr: socks5_proxy.to_owned(),
 				},
 				_ => unreachable!(),
 			};
@@ -121,7 +120,7 @@ impl DnsHandler {
 			resolver_config.add_name_server(name_server_config);
 			let mut resolver_opts = ResolverOpts::default();
 			resolver_opts.cache_size = 128;
-			TokioAsyncResolver::tokio(resolver_config, resolver_opts)
+			ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
 		});
 		resolver.to_owned()
 	}
