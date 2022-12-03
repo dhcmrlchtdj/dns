@@ -7,18 +7,30 @@ mod proxy_runtime;
 
 use anyhow::Result;
 use clap::Parser;
-use tracing::Level;
+use tracing_subscriber::{
+	filter::{filter_fn, LevelFilter},
+	layer::SubscriberExt,
+	reload,
+	util::SubscriberInitExt,
+};
 
 use crate::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+	let (level_filter, reload_level_filter) = reload::Layer::new(LevelFilter::INFO);
+	let target_filter = filter_fn(|l| l.target().starts_with("godns::"));
+	let json_format = tracing_subscriber::fmt::layer().json();
+	tracing_subscriber::registry()
+		.with(level_filter)
+		.with(target_filter)
+		.with(json_format)
+		.init();
+
 	let args = cli::Args::parse();
 	let config = Config::from_args(args)?;
 
-	// tracing_subscriber::fmt::fmt()
-	//     .with_max_level(Level::DEBUG)
-	//     .init();
+	reload_level_filter.modify(|lv| *lv = config.log_level.to_tracing())?;
 
 	config.validate_rules()?;
 

@@ -1,7 +1,8 @@
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
+use tracing_subscriber::filter::LevelFilter;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
 	Trace,
@@ -9,6 +10,18 @@ pub enum LogLevel {
 	Info,
 	Warn,
 	Error,
+}
+
+impl LogLevel {
+	pub fn to_tracing(&self) -> LevelFilter {
+		match self {
+			Self::Trace => LevelFilter::TRACE,
+			Self::Debug => LevelFilter::DEBUG,
+			Self::Info => LevelFilter::INFO,
+			Self::Warn => LevelFilter::WARN,
+			Self::Error => LevelFilter::ERROR,
+		}
+	}
 }
 
 impl Default for LogLevel {

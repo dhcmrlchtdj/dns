@@ -1,8 +1,3 @@
-use crate::{
-	config::{Rule, SpecialUpstream, Upstream},
-	dns_router::DnsRouter,
-	proxy_runtime::{ProxyAsyncResolver, ProxyHandle},
-};
 use async_trait::async_trait;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
@@ -20,6 +15,12 @@ use trust_dns_server::{
 		lookup::Lookup,
 	},
 	server::{Request, RequestHandler, ResponseHandler, ResponseInfo},
+};
+
+use crate::{
+	config::{Rule, SpecialUpstream, Upstream},
+	dns_router::DnsRouter,
+	proxy_runtime::{ProxyAsyncResolver, ProxyHandle},
 };
 
 #[derive(Debug)]

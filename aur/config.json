@@ -1,7 +1,7 @@
 {
 	"host": "127.0.0.1",
 	"port": 0,
-	"log_level": "info",
+	"log_level": "trace",
 	"rule": [
 		{
 			"pattern": { "domain": ["localhost"], "record": "A" },

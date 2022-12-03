@@ -1,6 +1,7 @@
-use crate::log_level::LogLevel;
 use clap::Parser;
 use std::path::PathBuf;
+
+use crate::log_level::LogLevel;
 
 #[derive(Parser, Debug)]
 #[command(version)]

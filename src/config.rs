@@ -1,8 +1,9 @@
-use crate::{cli, log_level::LogLevel};
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use trust_dns_server::client::rr::RecordType;
+
+use crate::{cli, log_level::LogLevel};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
