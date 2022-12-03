@@ -1,8 +1,7 @@
-use clap::ArgEnum;
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
-#[derive(Debug, Clone, ArgEnum, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
 	Trace,
@@ -18,14 +17,30 @@ impl Default for LogLevel {
 	}
 }
 
-impl fmt::Display for LogLevel {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			LogLevel::Trace => write!(f, "trace"),
-			LogLevel::Debug => write!(f, "debug"),
-			LogLevel::Info => write!(f, "info"),
-			LogLevel::Warn => write!(f, "warn"),
-			LogLevel::Error => write!(f, "error"),
+impl std::fmt::Display for LogLevel {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let s = match self {
+			Self::Trace => "trace",
+			Self::Debug => "debug",
+			Self::Info => "info",
+			Self::Warn => "warn",
+			Self::Error => "error",
+		};
+		s.fmt(f)
+	}
+}
+
+impl std::str::FromStr for LogLevel {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"trace" => Ok(Self::Trace),
+			"debug" => Ok(Self::Debug),
+			"info" => Ok(Self::Info),
+			"warn" => Ok(Self::Warn),
+			"error" => Ok(Self::Error),
+			_ => Err(format!("Unknown log level: {s}")),
 		}
 	}
 }
