@@ -39,8 +39,9 @@ impl DnsHandler {
 	pub fn add_rules(&mut self, rules: Vec<Rule>) {
 		rules
 			.into_iter()
+			.rev()
 			.enumerate()
-			.for_each(|(index, rule)| self.router.add_rule(rule, index))
+			.for_each(|(priority, rule)| self.router.add_rule(rule, priority))
 	}
 
 	fn search_upstream(&self, request: &Request) -> Option<Upstream> {

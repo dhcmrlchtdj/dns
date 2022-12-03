@@ -4,38 +4,67 @@ use trust_dns_server::client::rr::RecordType;
 
 #[derive(Debug, Clone)]
 pub struct DnsRouter {
-	record_router: HashMap<RecordType, Node>,
-	default_router: Node,
+	domain: Node,
+	suffix: Node,
+	domain_record: HashMap<RecordType, Node>,
+	suffix_record: HashMap<RecordType, Node>,
+}
+
+#[derive(Debug, Clone)]
+struct Node {
+	next: HashMap<String, Node>,
+	matched: Option<Matched>,
+}
+
+#[derive(Debug, Clone)]
+struct Matched {
+	upstream: Upstream,
+	priority: usize,
 }
 
 impl DnsRouter {
 	pub fn new() -> Self {
 		Self {
-			record_router: HashMap::new(),
-			default_router: Node::new(),
+			domain: Node::new(),
+			suffix: Node::new(),
+			domain_record: HashMap::new(),
+			suffix_record: HashMap::new(),
 		}
 	}
 
-	pub fn add_rule(&mut self, rule: Rule, index: usize) {
-		let (is_suffix, domains, record) = match rule.pattern {
-			Pattern::Domain { domain, record } => (false, domain, record),
-			Pattern::Suffix { suffix, record } => (true, suffix, record),
+	pub fn add_rule(&mut self, rule: Rule, priority: usize) {
+		let (domains, node): (Vec<String>, &Node) = match rule.pattern {
+			Pattern::Domain {
+				domain,
+				record: None,
+			} => (domain, &self.domain),
+			Pattern::Domain {
+				domain,
+				record: Some(record),
+			} => (
+				domain,
+				self.domain_record.entry(record).or_insert_with(Node::new),
+			),
+			Pattern::Suffix {
+				suffix,
+				record: None,
+			} => (suffix, &self.suffix),
+			Pattern::Suffix {
+				suffix,
+				record: Some(record),
+			} => (
+				suffix,
+				self.suffix_record.entry(record).or_insert_with(Node::new),
+			),
 		};
+
 		domains.into_iter().for_each(|domain| {
 			let segments = domain
 				.split('.')
 				.filter(|x| !x.is_empty())
 				.rev()
 				.collect::<Vec<&str>>();
-			match record {
-				None => self
-					.default_router
-					.add(is_suffix, segments, rule.upstream.clone(), index),
-				Some(record) => {
-					let node = self.record_router.entry(record).or_insert_with(Node::new);
-					node.add(is_suffix, segments.clone(), rule.upstream.clone(), index);
-				}
-			};
+			node.add(segments, rule.upstream.clone(), priority)
 		});
 	}
 
@@ -45,80 +74,93 @@ impl DnsRouter {
 			.filter(|x| !x.is_empty())
 			.collect::<Vec<&str>>();
 
-		let record_upstream: Option<(Upstream, bool, usize)> =
-			if let Some(r) = self.record_router.get(&record_type) {
-				r.search(segments.clone())
-			} else {
-				None
-			};
-		let default_upstream = self.default_router.search(segments);
+		if let Some((m, len)) = self
+			.domain_record
+			.get(&record_type)
+			.and_then(|n| n.search(&segments))
+		{
+			if len == segments.len() {
+				return Some(m.upstream);
+			}
+		}
 
-		match (record_upstream, default_upstream) {
+		if let Some((m, len)) = self.domain.search(&segments) {
+			if len == segments.len() {
+				return Some(m.upstream);
+			}
+		}
+
+		let r1 = self
+			.suffix_record
+			.get(&record_type)
+			.and_then(|n| n.search(&segments));
+		let r2 = self.suffix.search(&segments);
+		match (r1, r2) {
 			(None, None) => None,
-			(Some((u, _, _)), None) | (None, Some((u, _, _))) => Some(u),
-			(Some((u, false, _)), Some(_)) => Some(u),
-			(Some(_), Some((u, false, _))) => Some(u),
-			(Some((u1, true, i1)), Some((u2, true, i2))) => Some(if i1 < i2 { u1 } else { u2 }),
+			(Some((m, _)), None) | (None, Some((m, _))) => Some(m.upstream),
+			(Some((m1, _)), Some((m2, _))) => Some(if m1.priority >= m2.priority {
+				m1.upstream
+			} else {
+				m2.upstream
+			}),
 		}
 	}
-}
-
-#[derive(Debug, Clone)]
-struct Node {
-	next: HashMap<String, Node>,
-	domain: Option<(Upstream, bool, usize)>, // upstream, is_suffix, index
-	suffix: Option<(Upstream, bool, usize)>,
 }
 
 impl Node {
 	fn new() -> Self {
 		Self {
 			next: HashMap::new(),
-			domain: None,
-			suffix: None,
+			matched: None,
 		}
 	}
 
-	fn add(&mut self, is_suffix: bool, mut segments: Vec<&str>, upstream: Upstream, index: usize) {
-		if segments.is_empty() {
-			match (is_suffix, self.suffix.as_ref(), self.domain.as_ref()) {
-				(true, None, _) => self.suffix = Some((upstream, is_suffix, index)),
-				(true, Some((_, _, curr)), _) if index < *curr => {
-					self.suffix = Some((upstream, is_suffix, index))
-				}
-				(false, _, None) => self.domain = Some((upstream, is_suffix, index)),
-				(false, _, Some((_, _, curr))) if index < *curr => {
-					self.domain = Some((upstream, is_suffix, index))
-				}
-				_ => (),
-			};
-		} else {
-			let segment = segments.pop().unwrap();
-			let next = self
+	fn add(&mut self, mut segments: Vec<&str>, upstream: Upstream, priority: usize) {
+		let mut curr = self;
+		for segment in segments {
+			curr = curr
 				.next
 				.entry(segment.to_string())
 				.or_insert_with(Node::new);
-			next.add(is_suffix, segments, upstream, index);
 		}
+		match curr.matched.as_ref() {
+			None => self.matched = Some(Matched::new(upstream, priority)),
+			Some(m) if priority > m.priority => {
+				self.matched = Some(Matched::new(upstream, priority))
+			}
+			_ => (),
+		};
 	}
 
-	fn search(&self, mut segments: Vec<&str>) -> Option<(Upstream, bool, usize)> {
-		if segments.is_empty() {
-			match (self.domain.as_ref(), self.suffix.as_ref()) {
-				(Some(m), _) => Some(m.clone()),
-				(None, Some(m)) => Some(m.clone()),
-				(None, None) => None,
-			}
-		} else {
-			let segment = segments.pop().unwrap();
-			match self.next.get(segment) {
-				None => self.suffix.clone(),
-				Some(next) => match (next.search(segments), self.suffix.as_ref()) {
-					(Some(m), _) => Some(m),
-					(None, Some(m)) => Some(m.clone()),
-					(None, None) => None,
-				},
-			}
+	fn search(&self, mut segments: &Vec<&str>) -> Option<(Matched, usize)> {
+		let mut curr = self;
+		let mut matched = self.matched;
+		let mut longestMatch = 0;
+		for (idx, segment) in segments.iter().enumerate() {
+			match curr.next.get(*segment) {
+				None => break,
+				Some(next) => {
+					match (matched, next.matched) {
+						(None, Some(m)) => {
+							matched = next.matched;
+							longestMatch = idx + 1;
+						}
+						(Some(m1), Some(m2)) if m2.priority > m1.priority => {
+							matched = next.matched;
+							longestMatch = idx + 1;
+						}
+						_ => (),
+					}
+					curr = next;
+				}
+			};
 		}
+		return matched.and_then(|m| Some((m, longestMatch)));
+	}
+}
+
+impl Matched {
+	fn new(upstream: Upstream, priority: usize) -> Self {
+		Self { upstream, priority }
 	}
 }
