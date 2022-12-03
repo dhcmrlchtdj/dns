@@ -48,7 +48,8 @@ impl DnsHandler {
 		let query = request.query();
 		let record_type = query.query_type();
 		let domain = query.name().to_string();
-		self.router.search(domain, record_type)
+		let upstream = self.router.search(domain, record_type);
+		upstream.map(|x| (*x).clone())
 	}
 
 	async fn get_client(&self, upstream: Upstream) -> Result<ProxyAsyncResolver, ResolveError> {

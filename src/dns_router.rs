@@ -1,8 +1,8 @@
 use crate::config::{Pattern, Rule, Upstream};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use trust_dns_server::client::rr::RecordType;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DnsRouter {
 	domain: Node,
 	suffix: Node,
@@ -10,7 +10,7 @@ pub struct DnsRouter {
 	suffix_record: HashMap<RecordType, Node>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Node {
 	next: HashMap<String, Node>,
 	matched: Option<Matched>,
@@ -18,7 +18,7 @@ struct Node {
 
 #[derive(Debug, Clone)]
 struct Matched {
-	upstream: Upstream,
+	upstream: Arc<Upstream>,
 	priority: usize,
 }
 
@@ -33,11 +33,12 @@ impl DnsRouter {
 	}
 
 	pub fn add_rule(&mut self, rule: Rule, priority: usize) {
+		let upstream = Arc::new(rule.upstream);
 		match rule.pattern {
 			Pattern::Domain {
 				domain,
 				record: None,
-			} => self.domain.add_domains(domain, rule.upstream, priority),
+			} => self.domain.add_domains(domain, upstream, priority),
 			Pattern::Domain {
 				domain,
 				record: Some(record),
@@ -45,11 +46,11 @@ impl DnsRouter {
 				.domain_record
 				.entry(record)
 				.or_insert_with(Node::new)
-				.add_domains(domain, rule.upstream, priority),
+				.add_domains(domain, upstream, priority),
 			Pattern::Suffix {
 				suffix,
 				record: None,
-			} => self.suffix.add_domains(suffix, rule.upstream, priority),
+			} => self.suffix.add_domains(suffix, upstream, priority),
 			Pattern::Suffix {
 				suffix,
 				record: Some(record),
@@ -57,11 +58,11 @@ impl DnsRouter {
 				.suffix_record
 				.entry(record)
 				.or_insert_with(Node::new)
-				.add_domains(suffix, rule.upstream, priority),
+				.add_domains(suffix, upstream, priority),
 		};
 	}
 
-	pub fn search(&self, domain: String, record_type: RecordType) -> Option<Upstream> {
+	pub fn search(&self, domain: String, record_type: RecordType) -> Option<Arc<Upstream>> {
 		let segments = domain
 			.split('.')
 			.filter(|x| !x.is_empty())
@@ -109,7 +110,7 @@ impl Node {
 		}
 	}
 
-	fn add_domains(&mut self, domains: Vec<String>, upstream: Upstream, priority: usize) {
+	fn add_domains(&mut self, domains: Vec<String>, upstream: Arc<Upstream>, priority: usize) {
 		for domain in domains {
 			let segments = domain
 				.split('.')
@@ -120,7 +121,7 @@ impl Node {
 		}
 	}
 
-	fn add(&mut self, segments: &Vec<&str>, upstream: Upstream, priority: usize) {
+	fn add(&mut self, segments: &Vec<&str>, upstream: Arc<Upstream>, priority: usize) {
 		let mut curr = self;
 		for segment in segments {
 			curr = curr
@@ -165,7 +166,7 @@ impl Node {
 }
 
 impl Matched {
-	fn new(upstream: Upstream, priority: usize) -> Self {
+	fn new(upstream: Arc<Upstream>, priority: usize) -> Self {
 		Self { upstream, priority }
 	}
 }
