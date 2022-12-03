@@ -33,46 +33,40 @@ impl DnsRouter {
 	}
 
 	pub fn add_rule(&mut self, rule: Rule, priority: usize) {
-		let (domains, node): (Vec<String>, &Node) = match rule.pattern {
+		match rule.pattern {
 			Pattern::Domain {
 				domain,
 				record: None,
-			} => (domain, &self.domain),
+			} => self.domain.add_domains(domain, rule.upstream, priority),
 			Pattern::Domain {
 				domain,
 				record: Some(record),
-			} => (
-				domain,
-				self.domain_record.entry(record).or_insert_with(Node::new),
-			),
+			} => self
+				.domain_record
+				.entry(record)
+				.or_insert_with(Node::new)
+				.add_domains(domain, rule.upstream, priority),
 			Pattern::Suffix {
 				suffix,
 				record: None,
-			} => (suffix, &self.suffix),
+			} => self.suffix.add_domains(suffix, rule.upstream, priority),
 			Pattern::Suffix {
 				suffix,
 				record: Some(record),
-			} => (
-				suffix,
-				self.suffix_record.entry(record).or_insert_with(Node::new),
-			),
+			} => self
+				.suffix_record
+				.entry(record)
+				.or_insert_with(Node::new)
+				.add_domains(suffix, rule.upstream, priority),
 		};
-
-		domains.into_iter().for_each(|domain| {
-			let segments = domain
-				.split('.')
-				.filter(|x| !x.is_empty())
-				.rev()
-				.collect::<Vec<&str>>();
-			node.add(segments, rule.upstream.clone(), priority)
-		});
 	}
 
 	pub fn search(&self, domain: String, record_type: RecordType) -> Option<Upstream> {
 		let segments = domain
 			.split('.')
 			.filter(|x| !x.is_empty())
-			.collect::<Vec<&str>>();
+			.enumerate()
+			.collect::<Vec<(usize, &str)>>();
 
 		if let Some((m, len)) = self
 			.domain_record
@@ -115,7 +109,18 @@ impl Node {
 		}
 	}
 
-	fn add(&mut self, mut segments: Vec<&str>, upstream: Upstream, priority: usize) {
+	fn add_domains(&mut self, domains: Vec<String>, upstream: Upstream, priority: usize) {
+		for domain in domains {
+			let segments = domain
+				.split('.')
+				.filter(|x| !x.is_empty())
+				.rev()
+				.collect::<Vec<&str>>();
+			self.add(&segments, upstream.clone(), priority)
+		}
+	}
+
+	fn add(&mut self, segments: &Vec<&str>, upstream: Upstream, priority: usize) {
 		let mut curr = self;
 		for segment in segments {
 			curr = curr
@@ -124,30 +129,30 @@ impl Node {
 				.or_insert_with(Node::new);
 		}
 		match curr.matched.as_ref() {
-			None => self.matched = Some(Matched::new(upstream, priority)),
+			None => curr.matched = Some(Matched::new(upstream, priority)),
 			Some(m) if priority > m.priority => {
-				self.matched = Some(Matched::new(upstream, priority))
+				curr.matched = Some(Matched::new(upstream, priority))
 			}
 			_ => (),
 		};
 	}
 
-	fn search(&self, mut segments: &Vec<&str>) -> Option<(Matched, usize)> {
+	fn search(&self, segments: &Vec<(usize, &str)>) -> Option<(Matched, usize)> {
 		let mut curr = self;
-		let mut matched = self.matched;
-		let mut longestMatch = 0;
-		for (idx, segment) in segments.iter().enumerate() {
+		let mut matched = self.matched.clone();
+		let mut longest_match = 0;
+		for (idx, segment) in segments {
 			match curr.next.get(*segment) {
 				None => break,
 				Some(next) => {
-					match (matched, next.matched) {
-						(None, Some(m)) => {
-							matched = next.matched;
-							longestMatch = idx + 1;
+					match (matched.as_ref(), next.matched.as_ref()) {
+						(None, Some(_)) => {
+							matched = next.matched.clone();
+							longest_match = idx + 1;
 						}
 						(Some(m1), Some(m2)) if m2.priority > m1.priority => {
-							matched = next.matched;
-							longestMatch = idx + 1;
+							matched = next.matched.clone();
+							longest_match = idx + 1;
 						}
 						_ => (),
 					}
@@ -155,7 +160,7 @@ impl Node {
 				}
 			};
 		}
-		return matched.and_then(|m| Some((m, longestMatch)));
+		matched.map(|m| (m, longest_match))
 	}
 }
 

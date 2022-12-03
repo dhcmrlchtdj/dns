@@ -112,9 +112,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver
-						.lookup(query.name(), query.query_type(), lookup_opt)
-						.await?;
+					let result = resolver.lookup(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::TCP { .. } => {
@@ -122,9 +120,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver
-						.lookup(query.name(), query.query_type(), lookup_opt)
-						.await?;
+					let result = resolver.lookup(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::DoT { .. } => {
@@ -132,9 +128,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver
-						.lookup(query.name(), query.query_type(), lookup_opt)
-						.await?;
+					let result = resolver.lookup(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::DoH { .. } => {
@@ -142,9 +136,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver
-						.lookup(query.name(), query.query_type(), lookup_opt)
-						.await?;
+					let result = resolver.lookup(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::IPv4 { ipv4 } => {
