@@ -157,31 +157,10 @@ impl DnsHandler {
 	) -> Result<ResponseInfo, std::io::Error> {
 		if let Some(upstream) = self.search_upstream(request) {
 			let result = match upstream.as_ref() {
-				Upstream::UDP { .. } => {
-					let resolver = self.get_client(upstream).await?;
-					let query = request.query();
-					let mut lookup_opt = DnsRequestOptions::default();
-					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.resolve(query.name(), query.query_type()).await?;
-					Some(result)
-				}
-				Upstream::TCP { .. } => {
-					let resolver = self.get_client(upstream).await?;
-					let query = request.query();
-					let mut lookup_opt = DnsRequestOptions::default();
-					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.resolve(query.name(), query.query_type()).await?;
-					Some(result)
-				}
-				Upstream::DoT { .. } => {
-					let resolver = self.get_client(upstream).await?;
-					let query = request.query();
-					let mut lookup_opt = DnsRequestOptions::default();
-					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.resolve(query.name(), query.query_type()).await?;
-					Some(result)
-				}
-				Upstream::DoH { .. } => {
+				Upstream::UDP { .. }
+				| Upstream::TCP { .. }
+				| Upstream::DoT { .. }
+				| Upstream::DoH { .. } => {
 					let resolver = self.get_client(upstream).await?;
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
