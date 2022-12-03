@@ -1,4 +1,5 @@
 use crate::{
+	async_dns_resolver::MyAsyncResolver,
 	config::{Rule, SpecialUpstream, Upstream},
 	dns_router::DnsRouter,
 	proxy_runtime::{ProxyAsyncResolver, ProxyHandle},
@@ -18,6 +19,7 @@ use trust_dns_server::{
 		config::{NameServerConfig, Protocol, ResolverConfig, ResolverOpts},
 		error::ResolveError,
 		lookup::Lookup,
+		TokioAsyncResolver,
 	},
 	server::{Request, RequestHandler, ResponseHandler, ResponseInfo},
 };
@@ -25,7 +27,7 @@ use trust_dns_server::{
 #[derive(Debug)]
 pub struct DnsHandler {
 	router: DnsRouter,
-	clients: Arc<RwLock<HashMap<Upstream, Result<ProxyAsyncResolver, ResolveError>>>>,
+	clients: Arc<RwLock<HashMap<Upstream, Result<Box<dyn MyAsyncResolver>, ResolveError>>>>,
 }
 
 impl DnsHandler {
@@ -54,7 +56,7 @@ impl DnsHandler {
 	async fn get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Result<ProxyAsyncResolver, ResolveError> {
+	) -> &Result<Box<dyn MyAsyncResolver>, ResolveError> {
 		let resolver = self.fast_get_client(upstream.clone()).await;
 		if let Some(r) = resolver {
 			r
@@ -65,18 +67,24 @@ impl DnsHandler {
 	async fn fast_get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Option<Result<ProxyAsyncResolver, ResolveError>> {
+	) -> Option<&Result<Box<dyn MyAsyncResolver>, ResolveError>> {
 		let map = self.clients.clone();
 		let map = map.read().await;
-		map.get(&upstream).map(|x| x.to_owned())
+		let resolver = map.get(&upstream);
+		match resolver {
+			Some(Ok(r)) => Some(Ok((r))),
+			Some(Err(e)) => Some(Err((*e))),
+			None => None,
+		}
 	}
 	async fn slow_get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Result<ProxyAsyncResolver, ResolveError> {
+	) -> &Result<Box<dyn MyAsyncResolver>, ResolveError> {
 		let map = self.clients.clone();
 		let mut map = map.write().await;
 		let resolver = map.entry((*upstream).clone()).or_insert_with(|| {
+			let mut use_proxy = false;
 			let name_server_config = match upstream.as_ref() {
 				Upstream::UDP { udp } => NameServerConfig {
 					socket_addr: udp.to_owned(),
@@ -105,22 +113,49 @@ impl DnsHandler {
 				Upstream::DoH {
 					doh,
 					domain,
-					socks5_proxy,
+					socks5_proxy: None,
 				} => NameServerConfig {
 					socket_addr: doh.to_owned(),
 					protocol: Protocol::Https,
 					tls_dns_name: Some(domain.to_owned()),
 					trust_nx_responses: true,
 					tls_config: None,
-					bind_addr: socks5_proxy.to_owned(),
+					bind_addr: None,
 				},
+				Upstream::DoH {
+					doh,
+					domain,
+					socks5_proxy,
+				} => {
+					use_proxy = true;
+					NameServerConfig {
+						socket_addr: doh.to_owned(),
+						protocol: Protocol::Https,
+						tls_dns_name: Some(domain.to_owned()),
+						trust_nx_responses: true,
+						tls_config: None,
+						bind_addr: socks5_proxy.to_owned(),
+					}
+				}
 				_ => unreachable!(),
 			};
 			let mut resolver_config = ResolverConfig::new();
 			resolver_config.add_name_server(name_server_config);
 			let mut resolver_opts = ResolverOpts::default();
 			resolver_opts.cache_size = 128;
-			ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
+			if use_proxy {
+				let r = ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle);
+				match r {
+					Ok(rr) => Ok(Box::new(rr)),
+					Err(e) => Err(e),
+				}
+			} else {
+				let r = TokioAsyncResolver::tokio(resolver_config, resolver_opts);
+				match r {
+					Ok(rr) => Ok(Box::new(rr)),
+					Err(e) => Err(e),
+				}
+			}
 		});
 		resolver.to_owned()
 	}
@@ -137,7 +172,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.lookup(query.name(), query.query_type()).await?;
+					let result = resolver.resolve(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::TCP { .. } => {
@@ -145,7 +180,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.lookup(query.name(), query.query_type()).await?;
+					let result = resolver.resolve(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::DoT { .. } => {
@@ -153,7 +188,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.lookup(query.name(), query.query_type()).await?;
+					let result = resolver.resolve(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::DoH { .. } => {
@@ -161,7 +196,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.lookup(query.name(), query.query_type()).await?;
+					let result = resolver.resolve(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::IPv4 { ipv4 } => {
