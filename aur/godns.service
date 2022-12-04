@@ -1,5 +1,5 @@
 [Unit]
-Description=DNS with china list
+Description=DNS server
 After=network.target
 
 [Service]

@@ -7,7 +7,7 @@ class Godns < Formula
   depends_on "rust" => :build
 
   def install
-    system "cargo", "install", "--all-features", *std_cargo_args
+    system "cargo", "install", *std_cargo_args
     (etc/"godns").mkpath
     etc.install "aur/config.json" => "godns/config.json"
   end
