@@ -10,22 +10,16 @@ use clap::Parser;
 use tracing_subscriber::{
 	filter::{filter_fn, LevelFilter},
 	layer::SubscriberExt,
-	reload,
+	reload::{self, Handle},
 	util::SubscriberInitExt,
+	Registry,
 };
 
 use crate::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-	let (level_filter, reload_level_filter) = reload::Layer::new(LevelFilter::INFO);
-	let target_filter = filter_fn(|l| l.target().starts_with("godns::"));
-	let json_format = tracing_subscriber::fmt::layer().json();
-	tracing_subscriber::registry()
-		.with(level_filter)
-		.with(target_filter)
-		.with(json_format)
-		.init();
+	let reload_level_filter = setup_logger();
 
 	let args = cli::Args::parse();
 	let config = Config::from_args(args)?;
@@ -46,4 +40,16 @@ async fn main() -> Result<()> {
 	//https://tokio.rs/tokio/topics/shutdown
 
 	Ok(())
+}
+
+fn setup_logger() -> Handle<LevelFilter, Registry> {
+	let (level_filter, reload_level_filter) = reload::Layer::new(LevelFilter::INFO);
+	let target_filter = filter_fn(|l| l.target().starts_with("godns::"));
+	let json_format = tracing_subscriber::fmt::layer().json();
+	tracing_subscriber::registry()
+		.with(level_filter)
+		.with(target_filter)
+		.with(json_format)
+		.init();
+	reload_level_filter
 }

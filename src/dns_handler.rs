@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{event, Level};
@@ -205,7 +204,7 @@ impl DnsHandler {
 	}
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl RequestHandler for DnsHandler {
 	async fn handle_request<R: ResponseHandler>(
 		&self,
