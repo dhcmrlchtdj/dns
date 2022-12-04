@@ -6,7 +6,7 @@ use trust_dns_server::{
 	authority::MessageResponseBuilder,
 	client::{
 		op::{Header, MessageType, OpCode, Query, ResponseCode},
-		rr::{RData, Record, RecordType},
+		rr::{LowerName, RData, Record, RecordType},
 	},
 	proto::xfer::DnsRequestOptions,
 	resolver::{
@@ -28,6 +28,18 @@ use crate::{
 enum AsyncResolver {
 	Directed(TokioAsyncResolver),
 	Proxied(ProxyAsyncResolver),
+}
+impl AsyncResolver {
+	async fn lookup(
+		&self,
+		name: &LowerName,
+		record_type: RecordType,
+	) -> Result<Lookup, ResolveError> {
+		match self {
+			AsyncResolver::Directed(r) => r.lookup(name, record_type).await,
+			AsyncResolver::Proxied(r) => r.lookup(name, record_type).await,
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -137,14 +149,7 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = match resolver {
-						AsyncResolver::Directed(r) => {
-							r.lookup(query.name(), query.query_type()).await?
-						}
-						AsyncResolver::Proxied(r) => {
-							r.lookup(query.name(), query.query_type()).await?
-						}
-					};
+					let result = resolver.lookup(query.name(), query.query_type()).await?;
 					Some(result)
 				}
 				Upstream::IPv4 { ipv4 } => {
