@@ -1,4 +1,3 @@
-mod async_resolver_wrapper;
 mod cli;
 mod config;
 mod dns_handler;

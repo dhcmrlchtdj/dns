@@ -19,18 +19,21 @@ use trust_dns_server::{
 };
 
 use crate::{
-	async_resolver_wrapper::AsyncResolverWrapper,
 	config::{Rule, SpecialUpstream, Upstream},
 	dns_router::DnsRouter,
 	proxy_runtime::{ProxyAsyncResolver, ProxyHandle},
 };
 
-type ArcAsyncResolver = Arc<dyn AsyncResolverWrapper>;
+#[derive(Debug, Clone)]
+enum AsyncResolver {
+	Directed(TokioAsyncResolver),
+	Proxied(ProxyAsyncResolver),
+}
 
 #[derive(Debug)]
 pub struct DnsHandler {
 	router: DnsRouter,
-	clients: Arc<RwLock<HashMap<Upstream, Result<ArcAsyncResolver, ResolveError>>>>,
+	clients: Arc<RwLock<HashMap<Upstream, Result<AsyncResolver, ResolveError>>>>,
 }
 
 impl DnsHandler {
@@ -56,7 +59,7 @@ impl DnsHandler {
 		self.router.search(domain, record_type)
 	}
 
-	async fn get_client(&self, upstream: Arc<Upstream>) -> Result<ArcAsyncResolver, ResolveError> {
+	async fn get_client(&self, upstream: Arc<Upstream>) -> Result<AsyncResolver, ResolveError> {
 		let resolver = self.fast_get_client(upstream.clone()).await;
 		if let Some(r) = resolver {
 			r
@@ -67,7 +70,7 @@ impl DnsHandler {
 	async fn fast_get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Option<Result<ArcAsyncResolver, ResolveError>> {
+	) -> Option<Result<AsyncResolver, ResolveError>> {
 		let map = self.clients.clone();
 		let map = map.read().await;
 		let resolver = map.get(&upstream);
@@ -76,62 +79,31 @@ impl DnsHandler {
 	async fn slow_get_client(
 		&self,
 		upstream: Arc<Upstream>,
-	) -> Result<ArcAsyncResolver, ResolveError> {
+	) -> Result<AsyncResolver, ResolveError> {
 		let map = self.clients.clone();
 		let mut map = map.write().await;
 		let resolver = map.entry((*upstream).clone()).or_insert_with(|| {
 			let mut use_proxy = false;
 			let name_server_config = match upstream.as_ref() {
-				Upstream::UDP { udp } => NameServerConfig {
-					socket_addr: udp.to_owned(),
-					protocol: Protocol::Udp,
-					tls_dns_name: None,
-					trust_nx_responses: true,
-					tls_config: None,
-					bind_addr: None,
-				},
-				Upstream::TCP { tcp } => NameServerConfig {
-					socket_addr: tcp.to_owned(),
-					protocol: Protocol::Tcp,
-					tls_dns_name: None,
-					trust_nx_responses: true,
-					tls_config: None,
-					bind_addr: None,
-				},
-				Upstream::DoT { dot, domain } => NameServerConfig {
-					socket_addr: dot.to_owned(),
-					protocol: Protocol::Tls,
-					tls_dns_name: Some(domain.to_owned()),
-					trust_nx_responses: true,
-					tls_config: None,
-					bind_addr: None,
-				},
-				Upstream::DoH {
-					doh,
-					domain,
-					socks5_proxy: None,
-				} => NameServerConfig {
-					socket_addr: doh.to_owned(),
-					protocol: Protocol::Https,
-					tls_dns_name: Some(domain.to_owned()),
-					trust_nx_responses: true,
-					tls_config: None,
-					bind_addr: None,
-				},
+				Upstream::UDP { udp } => NameServerConfig::new(udp.to_owned(), Protocol::Udp),
+				Upstream::TCP { tcp } => NameServerConfig::new(tcp.to_owned(), Protocol::Tcp),
+				Upstream::DoT { dot, domain } => {
+					let mut c = NameServerConfig::new(dot.to_owned(), Protocol::Tls);
+					c.tls_dns_name = Some(domain.to_owned());
+					c
+				}
 				Upstream::DoH {
 					doh,
 					domain,
 					socks5_proxy,
 				} => {
-					use_proxy = true;
-					NameServerConfig {
-						socket_addr: doh.to_owned(),
-						protocol: Protocol::Https,
-						tls_dns_name: Some(domain.to_owned()),
-						trust_nx_responses: true,
-						tls_config: None,
-						bind_addr: socks5_proxy.to_owned(),
+					let mut c = NameServerConfig::new(doh.to_owned(), Protocol::Https);
+					c.tls_dns_name = Some(domain.to_owned());
+					if socks5_proxy.is_some() {
+						use_proxy = true;
+						c.bind_addr = socks5_proxy.to_owned();
 					}
+					c
 				}
 				_ => unreachable!(),
 			};
@@ -141,13 +113,13 @@ impl DnsHandler {
 			resolver_opts.cache_size = 128;
 			if use_proxy {
 				ProxyAsyncResolver::new(resolver_config, resolver_opts, ProxyHandle)
-					.map(|x| (Arc::new(x) as ArcAsyncResolver))
+					.map(AsyncResolver::Proxied)
 			} else {
 				TokioAsyncResolver::tokio(resolver_config, resolver_opts)
-					.map(|x| (Arc::new(x) as ArcAsyncResolver))
+					.map(AsyncResolver::Directed)
 			}
 		});
-		resolver.to_owned()
+		resolver.clone()
 	}
 
 	pub async fn query<R: ResponseHandler>(
@@ -165,7 +137,14 @@ impl DnsHandler {
 					let query = request.query();
 					let mut lookup_opt = DnsRequestOptions::default();
 					lookup_opt.use_edns = request.edns().is_some();
-					let result = resolver.resolve(query.name(), query.query_type()).await?;
+					let result = match resolver {
+						AsyncResolver::Directed(r) => {
+							r.lookup(query.name(), query.query_type()).await?
+						}
+						AsyncResolver::Proxied(r) => {
+							r.lookup(query.name(), query.query_type()).await?
+						}
+					};
 					Some(result)
 				}
 				Upstream::IPv4 { ipv4 } => {

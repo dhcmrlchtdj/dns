@@ -20,7 +20,7 @@
 			"upstream": {
 				"doh": "1.1.1.1:443",
 				"domain": "cloudflare-dns.com",
-				"socks5_proxy": "127.0.0.1:2080"
+				"socks5_proxy": "127.0.0.1:1080"
 			}
 		},
 		{

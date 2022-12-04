@@ -1,8 +1,9 @@
 build:
 	cargo build
+	cargo clippy
 
-test:
-	cargo run -q -- --config ./aur/config.json --log-level=trace --port=1053 | jq
+dev:
+	cargo run -- --config ./aur/config.json --log-level=trace --port=1053 | jq
 
 fmt:
 	cargo fmt
