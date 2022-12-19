@@ -1,7 +1,7 @@
 class Godns < Formula
   desc "DNS server"
   homepage "https://github.com/dhcmrlchtdj/godns"
-  license "AGPL-3.0-or-later"
+  license "MIT"
   head "https://github.com/dhcmrlchtdj/godns.git", branch: "main"
 
   depends_on "go" => :build
