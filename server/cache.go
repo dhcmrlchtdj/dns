@@ -12,8 +12,8 @@ import (
 )
 
 type cachedAnswer struct {
-	answer  []dns.RR
 	expired time.Time
+	answer  []dns.RR
 }
 type deferredAnswer = util.Deferred[cachedAnswer, int]
 

@@ -10,14 +10,14 @@ import (
 
 type Config struct {
 	Host     string  `json:"host,omitempty"`
-	Port     int     `json:"port,omitempty"`
 	LogLevel string  `json:"log_level,omitempty"`
 	Rule     []*Rule `json:"rule,omitempty"`
+	Port     int     `json:"port,omitempty"`
 }
 
 type Rule struct {
-	Pattern  Pattern  `json:"pattern"`
 	Upstream Upstream `json:"upstream"`
+	Pattern  Pattern  `json:"pattern"`
 }
 
 type Pattern struct {

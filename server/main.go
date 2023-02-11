@@ -17,10 +17,10 @@ import (
 
 type DnsServer struct {
 	dnsServer *dns.Server
-	Config    config.Config
+	ctx       context.Context
 	router    router
 	cache     sync.Map
-	ctx       context.Context
+	Config    config.Config
 }
 
 func NewDnsServer() *DnsServer {

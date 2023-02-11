@@ -32,7 +32,6 @@ disable = [
 
 [linters-settings.govet]
 enable-all = true
-disable = ["shadow", "fieldalignment"]
 
 [linters-settings.errcheck]
 check-type-assertions = true

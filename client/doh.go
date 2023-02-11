@@ -12,8 +12,8 @@ import (
 )
 
 type Doh struct {
-	server     string
 	httpClient *http.Client
+	server     string
 }
 
 func createDohResolver(ctx context.Context, doh string, dohProxy string) *Doh {
@@ -124,20 +124,20 @@ func (s *Doh) Resolve(ctx context.Context, question dns.Question, dnssec bool) (
 
 // https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/make-api-requests/dns-json/
 type dohResponse struct {
-	Status   int  `json:"Status"` // The Response Code of the DNS Query.
-	TC       bool `json:"TC"`     // If true, it means the truncated bit was set.
-	RD       bool `json:"RD"`     // If true, it means the Recursive Desired bit was set.
-	RA       bool `json:"RA"`     // If true, it means the Recursion Available bit was set.
-	AD       bool `json:"AD"`     // If true, it means that every record in the answer was verified with DNSSEC.
-	CD       bool `json:"CD"`     // If true, the client asked to disable DNSSEC validation.
 	Question []struct {
 		Name string `json:"name"` // The record name requested.
 		Type uint16 `json:"type"` // The type of DNS record requested.
 	} `json:"Question"`
 	Answer []struct {
 		Name string `json:"name"` // The record owner.
+		Data string `json:"data"` // The value of the DNS record for the given name and type.
 		Type uint16 `json:"type"` // The type of DNS record.
 		TTL  int    `json:"TTL"`  // The number of seconds the answer can be stored in cache before it is considered stale.
-		Data string `json:"data"` // The value of the DNS record for the given name and type.
 	} `json:"Answer"`
+	TC     bool `json:"TC"`     // If true, it means the truncated bit was set.
+	RD     bool `json:"RD"`     // If true, it means the Recursive Desired bit was set.
+	RA     bool `json:"RA"`     // If true, it means the Recursion Available bit was set.
+	AD     bool `json:"AD"`     // If true, it means that every record in the answer was verified with DNSSEC.
+	CD     bool `json:"CD"`     // If true, the client asked to disable DNSSEC validation.
+	Status int  `json:"Status"` // The Response Code of the DNS Query.
 }

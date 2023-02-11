@@ -21,8 +21,8 @@ type routerNode struct {
 	matched *routerMatched
 }
 type routerMatched struct {
-	priority int // smaller means higher priority
 	upstream *config.Upstream
+	priority int // smaller means higher priority
 }
 
 ///
@@ -180,7 +180,7 @@ func (node *routerNode) addDomain(priority int, domain string, upstream *config.
 		curr = next
 	}
 	if curr.matched == nil || curr.matched.priority > priority {
-		curr.matched = &routerMatched{priority, upstream}
+		curr.matched = &routerMatched{upstream, priority}
 	}
 }
 
