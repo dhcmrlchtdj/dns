@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
-	_ "net/http/pprof"
+	_ "net/http/pprof" // #nosec
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
@@ -86,7 +87,8 @@ func (s *DnsServer) SetupPprof() {
 	pprofMux := http.DefaultServeMux
 	http.DefaultServeMux = http.NewServeMux()
 	s.pprofServer = &http.Server{
-		Handler: pprofMux,
+		Handler:           pprofMux,
+		ReadHeaderTimeout: 10 * time.Second,
 		BaseContext: func(_ net.Listener) context.Context {
 			return s.ctx
 		},
@@ -153,6 +155,10 @@ func (s *DnsServer) shutdownDNS() {
 }
 
 func (s *DnsServer) startPprof() {
+	if zerolog.GlobalLevel() != zerolog.TraceLevel {
+		return
+	}
+
 	zerolog.Ctx(s.ctx).
 		Info().
 		Str("module", "server.main").
