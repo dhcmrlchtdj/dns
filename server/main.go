@@ -3,24 +3,30 @@ package server
 import (
 	"context"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"sync"
 	"syscall"
 
+	_ "net/http/pprof"
+
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/config"
 )
 
 type DnsServer struct {
-	dnsServer *dns.Server
-	ctx       context.Context
-	router    router
-	cache     sync.Map
-	Config    config.Config
+	dnsServer     *dns.Server
+	pprofServer   *http.Server
+	pprofListener net.Listener
+	ctx           context.Context
+	router        router
+	cache         sync.Map
+	Config        config.Config
 }
 
 func NewDnsServer() *DnsServer {
@@ -43,15 +49,9 @@ func (s *DnsServer) SetupContext() {
 			Str("signal", sig.String()).
 			Msg("DNS server is stopping")
 		cancel()
-		err := s.dnsServer.Shutdown()
-		if err != nil {
-			logger.Error().
-				Str("module", "server.main").
-				Stack().
-				Err(err).
-				Send()
-			panic(err)
-		}
+
+		s.shutdownDNS()
+		s.shutdownPprof()
 	}()
 }
 
@@ -82,9 +82,100 @@ func (s *DnsServer) SetupServer() {
 	dnsMux.HandleFunc(".", s.handleRequest)
 }
 
+func (s *DnsServer) SetupPprof() {
+	pprofMux := http.DefaultServeMux
+	http.DefaultServeMux = http.NewServeMux()
+	s.pprofServer = &http.Server{
+		Handler: pprofMux,
+		BaseContext: func(_ net.Listener) context.Context {
+			return s.ctx
+		},
+	}
+	netListener, err := net.Listen("tcp", s.Config.Host+":0")
+	if err != nil {
+		zerolog.Ctx(s.ctx).
+			Error().
+			Str("module", "server.main").
+			Stack().
+			Err(err).
+			Send()
+		panic(err)
+	}
+	s.pprofListener = netListener
+}
+
 func (s *DnsServer) Start() {
-	go s.cleanupExpiredCache()
-	if err := s.dnsServer.ListenAndServe(); err != nil {
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		s.cleanupExpiredCache()
+		wg.Done()
+	}()
+
+	go func() {
+		s.startDNS()
+		wg.Done()
+	}()
+
+	go func() {
+		s.startPprof()
+		wg.Done()
+	}()
+
+	wg.Wait()
+}
+
+func (s *DnsServer) startDNS() {
+	err := s.dnsServer.ListenAndServe()
+	if err != nil {
+		zerolog.Ctx(s.ctx).
+			Error().
+			Str("module", "server.main").
+			Stack().
+			Err(err).
+			Send()
+		panic(err)
+	}
+}
+
+func (s *DnsServer) shutdownDNS() {
+	err := s.dnsServer.Shutdown()
+	if err != nil {
+		zerolog.Ctx(s.ctx).
+			Error().
+			Str("module", "server.main").
+			Stack().
+			Err(err).
+			Send()
+		panic(err)
+	}
+}
+
+func (s *DnsServer) startPprof() {
+	zerolog.Ctx(s.ctx).
+		Info().
+		Str("module", "server.main").
+		Str("pprof_addr", "http://"+s.pprofListener.Addr().String()+"/debug/pprof/").
+		Msg("pprof is running")
+
+	err := s.pprofServer.Serve(s.pprofListener)
+	if err != nil {
+		if !errors.Is(err, http.ErrServerClosed) {
+			zerolog.Ctx(s.ctx).
+				Error().
+				Str("module", "server.main").
+				Stack().
+				Err(err).
+				Send()
+			panic(err)
+		}
+	}
+}
+
+func (s *DnsServer) shutdownPprof() {
+	err := s.pprofServer.Shutdown(s.ctx)
+	if err != nil {
 		zerolog.Ctx(s.ctx).
 			Error().
 			Str("module", "server.main").

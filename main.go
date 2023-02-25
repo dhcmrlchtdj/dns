@@ -23,5 +23,6 @@ func main() {
 
 	dnsServer.SetupRouter()
 	dnsServer.SetupServer()
+	dnsServer.SetupPprof()
 	dnsServer.Start()
 }
