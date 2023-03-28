@@ -4,18 +4,17 @@ SHELL := bash
 GOFLAGS := \
 	-trimpath \
 	-buildvcs=false \
-	-buildmode=pie \
-	-ldflags='-linkmode=external'
+	-buildmode=pie
 
 ###
 
 .PHONY: dev build fmt lint test clean outdated upgrade
 
-dev:
-	go run -race ./main.go --conf=./aur/config.json --log-level=trace --port=1053
-
 build:
 	go build $(GOFLAGS) -o ./_build/app
+
+dev:
+	go run -race ./main.go --conf=./aur/config.json --log-level=trace --port=1053
 
 fmt:
 	gofumpt -w .
