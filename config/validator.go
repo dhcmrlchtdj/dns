@@ -34,7 +34,7 @@ func (pat *Pattern) IsValid() error {
 	if pat == nil {
 		return ErrPatternInvalid
 	}
-	if len(pat.Builtin) != 0 {
+	if pat.Builtin != "" {
 		switch pat.Builtin {
 		case "china-list": // do nothing
 		default:

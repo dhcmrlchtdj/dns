@@ -22,9 +22,9 @@ type Rule struct {
 
 type Pattern struct {
 	Record  string   `json:"record,omitempty"`
+	Builtin string   `json:"builtin,omitempty"`
 	Domain  []string `json:"domain,omitempty"`
 	Suffix  []string `json:"suffix,omitempty"`
-	Builtin string   `json:"builtin,omitempty"`
 }
 
 type Upstream struct {
