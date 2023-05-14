@@ -35,23 +35,28 @@ func (r *router) setup() {
 	r.domainSuffixWithRecord = make(map[uint16]*routerNode)
 }
 
-func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
+func (r *router) addRules(ctx context.Context, rules []*config.Rule, serverStarted bool) {
 	for priority, rule := range rules {
 		if rule.Pattern.Builtin == "china-list" {
-			suffix, err := util.MakeChinaList(ctx).Fetch()
-			if err != nil {
-				panic(err)
-			}
-			for _, domain := range suffix {
-				r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+			if serverStarted {
+				suffix, err := util.MakeChinaList(ctx, rule.Pattern.BuiltinProxy).Fetch()
+				if err != nil {
+					panic(err)
+				}
+
+				for _, domain := range suffix {
+					r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+				}
 			}
 		}
 
-		for _, domain := range rule.Pattern.Domain {
-			r.addDomain(ctx, priority, domain, false, rule.Pattern.Record, &rule.Upstream)
-		}
-		for _, domain := range rule.Pattern.Suffix {
-			r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+		if !serverStarted {
+			for _, domain := range rule.Pattern.Domain {
+				r.addDomain(ctx, priority, domain, false, rule.Pattern.Record, &rule.Upstream)
+			}
+			for _, domain := range rule.Pattern.Suffix {
+				r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+			}
 		}
 	}
 }

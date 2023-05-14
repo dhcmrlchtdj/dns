@@ -61,7 +61,7 @@ func (s *DnsServer) SetupRouter() {
 		Str("module", "server.main").
 		Msg("loading config")
 	s.router.setup()
-	s.router.addRules(s.ctx, s.Config.Rule)
+	s.router.addRules(s.ctx, s.Config.Rule, false)
 }
 
 func (s *DnsServer) SetupServer() {
@@ -78,6 +78,8 @@ func (s *DnsServer) SetupServer() {
 				Str("log_level", s.Config.LogLevel).
 				Str("server_addr", addr.String()).
 				Msg("DNS server is running")
+
+			s.router.addRules(s.ctx, s.Config.Rule, true)
 		},
 	}
 	dnsMux.HandleFunc(".", s.handleRequest)

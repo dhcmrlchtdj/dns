@@ -21,10 +21,11 @@ type Rule struct {
 }
 
 type Pattern struct {
-	Record  string   `json:"record,omitempty"`
-	Builtin string   `json:"builtin,omitempty"`
-	Domain  []string `json:"domain,omitempty"`
-	Suffix  []string `json:"suffix,omitempty"`
+	Builtin      string   `json:"builtin,omitempty"`
+	BuiltinProxy string   `json:"builtin_proxy,omitempty"`
+	Record       string   `json:"record,omitempty"`
+	Domain       []string `json:"domain,omitempty"`
+	Suffix       []string `json:"suffix,omitempty"`
 }
 
 type Upstream struct {

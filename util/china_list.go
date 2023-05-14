@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -16,11 +17,22 @@ type ChinaList struct {
 
 const CHINA_LIST_URL = "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf"
 
-func MakeChinaList(ctx context.Context) *ChinaList {
+func MakeChinaList(ctx context.Context, proxy string) *ChinaList {
 	chinaList := ChinaList{
 		ctx:        ctx,
 		httpClient: new(http.Client),
 	}
+
+	if len(proxy) > 0 {
+		proxyUrl, err := url.Parse(proxy)
+		if err != nil {
+			panic(err)
+		}
+		chinaList.httpClient.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
+	}
+
 	return &chinaList
 }
 

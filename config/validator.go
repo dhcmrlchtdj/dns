@@ -24,10 +24,11 @@ func (r *Rule) IsValid() error {
 }
 
 var (
-	ErrPatternInvalid = errors.New("invalid pattern")
-	ErrPatternDomain  = errors.New("both domain/suffix are empty")
-	ErrPatternRecord  = errors.New("invalid record")
-	ErrPatternBuiltin = errors.New("invalid build-in rule")
+	ErrPatternInvalid      = errors.New("invalid pattern")
+	ErrPatternDomain       = errors.New("both domain/suffix are empty")
+	ErrPatternRecord       = errors.New("invalid record")
+	ErrPatternBuiltin      = errors.New("invalid build-in rule")
+	ErrPatternBuiltinProxy = errors.New("invalid build-in proxy")
 )
 
 func (pat *Pattern) IsValid() error {
@@ -39,6 +40,11 @@ func (pat *Pattern) IsValid() error {
 		case "china-list": // do nothing
 		default:
 			return ErrPatternBuiltin
+		}
+		if pat.BuiltinProxy != "" {
+			if _, err := url.Parse(pat.BuiltinProxy); err != nil {
+				return ErrPatternBuiltinProxy
+			}
 		}
 	} else if len(pat.Domain) == 0 && len(pat.Suffix) == 0 {
 		return ErrPatternDomain
