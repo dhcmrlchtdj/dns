@@ -32,7 +32,6 @@ type DnsServer struct {
 
 func NewDnsServer() *DnsServer {
 	server := new(DnsServer)
-	server.router.setup()
 	return server
 }
 
@@ -61,6 +60,7 @@ func (s *DnsServer) SetupRouter() {
 		Debug().
 		Str("module", "server.main").
 		Msg("loading config")
+	s.router.setup()
 	s.router.addRules(s.ctx, s.Config.Rule)
 }
 
