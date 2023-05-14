@@ -27,13 +27,20 @@ var (
 	ErrPatternInvalid = errors.New("invalid pattern")
 	ErrPatternDomain  = errors.New("both domain/suffix are empty")
 	ErrPatternRecord  = errors.New("invalid record")
+	ErrPatternBuiltin = errors.New("invalid build-in rule")
 )
 
 func (pat *Pattern) IsValid() error {
 	if pat == nil {
 		return ErrPatternInvalid
 	}
-	if len(pat.Domain) == 0 && len(pat.Suffix) == 0 {
+	if len(pat.Builtin) != 0 {
+		switch pat.Builtin {
+		case "china-list": // do nothing
+		default:
+			return ErrPatternBuiltin
+		}
+	} else if len(pat.Domain) == 0 && len(pat.Suffix) == 0 {
 		return ErrPatternDomain
 	}
 	if len(pat.Record) > 0 {

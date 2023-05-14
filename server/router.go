@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/config"
+	"github.com/dhcmrlchtdj/godns/util"
 )
 
 type router struct {
@@ -36,6 +37,16 @@ func (r *router) setup() {
 
 func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
 	for priority, rule := range rules {
+		if rule.Pattern.Builtin == "china-list" {
+			suffix, err := util.MakeChinaList(ctx).Fetch()
+			if err != nil {
+				panic(err)
+			}
+			for _, domain := range suffix {
+				r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+			}
+		}
+
 		for _, domain := range rule.Pattern.Domain {
 			r.addDomain(ctx, priority, domain, false, rule.Pattern.Record, &rule.Upstream)
 		}
