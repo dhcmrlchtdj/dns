@@ -39,11 +39,10 @@ func (r *router) addRules(ctx context.Context, rules []*config.Rule) {
 	for priority, rule := range rules {
 		if rule.Pattern.Builtin == "china-list" {
 			suffix, err := util.MakeChinaList(ctx).Fetch()
-			if err != nil {
-				panic(err)
-			}
-			for _, domain := range suffix {
-				r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+			if err == nil {
+				for _, domain := range suffix {
+					r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+				}
 			}
 		}
 

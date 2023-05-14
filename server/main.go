@@ -78,6 +78,9 @@ func (s *DnsServer) SetupServer() {
 				Str("log_level", s.Config.LogLevel).
 				Str("server_addr", addr.String()).
 				Msg("DNS server is running")
+
+			// add rule again
+			s.router.addRules(s.ctx, s.Config.Rule)
 		},
 	}
 	dnsMux.HandleFunc(".", s.handleRequest)
