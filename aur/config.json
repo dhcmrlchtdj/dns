@@ -21,10 +21,6 @@
 		{
 			"pattern": { "suffix": [".cn"] },
 			"upstream": { "udp": "101.6.6.6:5353" }
-		},
-		{
-			"pattern": { "builtin": "china-list" },
-			"upstream": { "udp": "101.6.6.6:5353" }
 		}
 	]
 }
