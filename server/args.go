@@ -11,11 +11,11 @@ func (s *DnsServer) ParseArgs() {
 	logLevel := flag.String("log-level", "", "Log level. trace, debug, info, warn, error, fatal, panic. (default \"info\")")
 	flag.Parse()
 
-	if len(*configFile) > 0 {
+	if *configFile != "" {
 		s.Config.LoadConfigFile(s.ctx, *configFile)
 	}
 
-	if len(*host) > 0 {
+	if *host != "" {
 		s.Config.Host = *host
 	}
 	if s.Config.Host == "" {
@@ -26,7 +26,7 @@ func (s *DnsServer) ParseArgs() {
 		s.Config.Port = *port
 	}
 
-	if len(*logLevel) > 0 {
+	if *logLevel != "" {
 		s.Config.LogLevel = *logLevel
 	}
 	if s.Config.LogLevel == "" {

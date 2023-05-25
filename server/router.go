@@ -78,7 +78,7 @@ func (r *router) addDomain(
 		Str("record", record).
 		Msg("added")
 
-	if len(record) > 0 {
+	if record != "" {
 		recordRouter := r.domainWithRecord
 		if isSuffix {
 			recordRouter = r.domainSuffixWithRecord
@@ -207,7 +207,7 @@ func domainToSegments(domain string) []string {
 	fullDomain := dns.CanonicalName(domain)
 	splited := strings.Split(fullDomain, ".")
 	for i := len(splited) - 2; i >= 0; i-- {
-		if len(splited[i]) > 0 {
+		if splited[i] != "" {
 			rev = append(rev, splited[i])
 		}
 	}

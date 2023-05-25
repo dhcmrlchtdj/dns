@@ -23,7 +23,7 @@ func MakeChinaList(ctx context.Context, proxy string) *ChinaList {
 		httpClient: new(http.Client),
 	}
 
-	if len(proxy) > 0 {
+	if proxy != "" {
 		proxyUrl, err := url.Parse(proxy)
 		if err != nil {
 			panic(err)

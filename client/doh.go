@@ -28,7 +28,7 @@ func createDohResolver(ctx context.Context, doh string, dohProxy string) *Doh {
 		return client.(*Doh)
 	} else {
 		httpClient := new(http.Client)
-		if len(dohProxy) > 0 {
+		if dohProxy != "" {
 			proxyUrl, err := url.Parse(dohProxy)
 			if err != nil {
 				panic(err)

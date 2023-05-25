@@ -49,7 +49,7 @@ func (pat *Pattern) IsValid() error {
 	} else if len(pat.Domain) == 0 && len(pat.Suffix) == 0 {
 		return ErrPatternDomain
 	}
-	if len(pat.Record) > 0 {
+	if pat.Record != "" {
 		if _, found := dns.StringToType[pat.Record]; !found {
 			return ErrPatternRecord
 		}
