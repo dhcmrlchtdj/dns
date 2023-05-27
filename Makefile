@@ -1,5 +1,8 @@
 SHELL := bash
-.SHELLFLAGS = -O globstar -c
+.SHELLFLAGS := -O globstar -e -u -o pipefail -c
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
+MAKEFLAGS += --no-builtin-variables
 
 GOFLAGS := \
 	-trimpath \
@@ -11,7 +14,7 @@ GOFLAGS := \
 .PHONY: dev build fmt lint test clean outdated upgrade
 
 build:
-	go build $(GOFLAGS) -o ./_build/app
+	CGO_ENABLED=0 go build $(GOFLAGS) -o ./_build/app
 
 dev:
 	go run -race ./main.go --conf=./aur/config.json --log-level=trace --port=1053
