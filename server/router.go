@@ -40,12 +40,17 @@ func (r *router) addRules(ctx context.Context, rules []*config.Rule, serverStart
 		if rule.Pattern.Builtin == "china-list" {
 			if serverStarted {
 				suffix, err := util.MakeChinaList(ctx, rule.Pattern.BuiltinProxy).Fetch()
-				if err != nil {
-					panic(err)
-				}
-
-				for _, domain := range suffix {
-					r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+				if err == nil {
+					for _, domain := range suffix {
+						r.addDomain(ctx, priority, domain, true, rule.Pattern.Record, &rule.Upstream)
+					}
+				} else {
+					zerolog.Ctx(ctx).
+						Error().
+						Str("module", "server.router").
+						Stack().
+						Err(err).
+						Msg("failed to load china-list")
 				}
 			}
 		}
