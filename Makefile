@@ -20,8 +20,8 @@ dev:
 	go run -race ./main.go --conf=./aur/config.json --log-level=trace --port=1053
 
 fmt:
+	gopls format -w **/*.go
 	gofumpt -w .
-	goimports -w .
 
 lint:
 	golangci-lint run
