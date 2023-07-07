@@ -24,7 +24,7 @@ func (u *Udp) Resolve(ctx context.Context, question dns.Question, dnssec bool) (
 	if dnssec {
 		msg.SetEdns0(4096, true)
 	}
-	in, err := dns.Exchange(msg, u.server)
+	in, err := dns.ExchangeContext(ctx, msg, u.server)
 	if err != nil {
 		logger.Error().Stack().Err(err).Send()
 		return nil, err
