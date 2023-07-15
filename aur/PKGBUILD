@@ -35,8 +35,8 @@ build() {
 	export CGO_CFLAGS="${CFLAGS}"
 	export CGO_CXXFLAGS="${CXXFLAGS}"
 	export CGO_LDFLAGS="${LDFLAGS}"
-	export GOFLAGS="-trimpath -buildmode=pie -buildvcs=false -modcacherw"
-	go build -o build .
+	export GOFLAGS="-trimpath -buildmode=pie -buildvcs=false -mod=readonly -modcacherw"
+	go build -o build/ ./cmd/...
 }
 
 package() {

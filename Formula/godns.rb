@@ -7,13 +7,13 @@ class Godns < Formula
   depends_on "go" => :build
 
   def install
-    system "go", "build", *std_go_args
+    system "go", "build", *std_go_args, "./cmd/godns"
     (etc/"godns").mkpath
     etc.install "aur/config.json" => "godns/config.json"
   end
 
   service do
-    run [opt_bin/"godns", "-conf", etc/"godns/config.json"]
+    run [opt_bin/"godns", "--conf", etc/"godns/config.json"]
     keep_alive true
     log_path var/"log/godns.log"
     error_log_path var/"log/godns.log"

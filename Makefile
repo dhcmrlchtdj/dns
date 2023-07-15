@@ -4,20 +4,18 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
 
-GOFLAGS := \
-	-trimpath \
-	-buildvcs=false \
-	-buildmode=pie
+GOFLAGS := -buildvcs=false -buildmode=pie -mod=readonly -trimpath
+# -ldflags="-w -s"
 
 ###
 
 .PHONY: dev build fmt lint test clean outdated upgrade
 
 build:
-	CGO_ENABLED=0 go build $(GOFLAGS) -o ./_build/app
+	CGO_ENABLED=0 go build $(GOFLAGS) -o _build/ ./cmd/...
 
 dev:
-	go run -race ./main.go --conf=./aur/config.json --log-level=trace --port=1053
+	go run -race ./cmd/godns --conf=./aur/config.json --log-level=trace --port=1053
 
 fmt:
 	gopls format -w **/*.go
