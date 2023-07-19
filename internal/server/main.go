@@ -25,7 +25,7 @@ type DnsServer struct {
 	pprofServer   *http.Server
 	pprofListener net.Listener
 	ctx           context.Context
-	router        router
+	router        *router
 	cache         sync.Map
 	Config        config.Config
 }
@@ -60,7 +60,7 @@ func (s *DnsServer) SetupRouter() {
 		Debug().
 		Str("module", "server.main").
 		Msg("loading config")
-	s.router.setup()
+	s.router = newRouter()
 	s.router.addRules(s.ctx, s.Config.Rule, false)
 }
 

@@ -28,11 +28,13 @@ type routerMatched struct {
 
 ///
 
-func (r *router) setup() {
-	r.domain = new(routerNode)
-	r.domainSuffix = new(routerNode)
-	r.domainWithRecord = make(map[uint16]*routerNode)
-	r.domainSuffixWithRecord = make(map[uint16]*routerNode)
+func newRouter() *router {
+	return &router{
+		domain:                 new(routerNode),
+		domainSuffix:           new(routerNode),
+		domainWithRecord:       make(map[uint16]*routerNode),
+		domainSuffixWithRecord: make(map[uint16]*routerNode),
+	}
 }
 
 func (r *router) addRules(ctx context.Context, rules []*config.Rule, serverStarted bool) {
