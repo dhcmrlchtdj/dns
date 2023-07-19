@@ -2,11 +2,12 @@ use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::filter::LevelFilter;
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
 	Trace,
 	Debug,
+	#[default]
 	Info,
 	Warn,
 	Error,
@@ -21,12 +22,6 @@ impl LogLevel {
 			Self::Warn => LevelFilter::WARN,
 			Self::Error => LevelFilter::ERROR,
 		}
-	}
-}
-
-impl Default for LogLevel {
-	fn default() -> Self {
-		LogLevel::Info
 	}
 }
 
