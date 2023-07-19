@@ -8,7 +8,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
 
-	"github.com/dhcmrlchtdj/godns/util"
+	"github.com/dhcmrlchtdj/godns/internal/util"
 )
 
 type cachedAnswer struct {

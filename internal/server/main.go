@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/dhcmrlchtdj/godns/config"
+	"github.com/dhcmrlchtdj/godns/internal/config"
 )
 
 type DnsServer struct {

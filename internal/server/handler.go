@@ -8,8 +8,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
 
-	"github.com/dhcmrlchtdj/godns/client"
-	"github.com/dhcmrlchtdj/godns/util"
+	"github.com/dhcmrlchtdj/godns/internal/client"
+	"github.com/dhcmrlchtdj/godns/internal/util"
 )
 
 func (s *DnsServer) handleRequest(w dns.ResponseWriter, request *dns.Msg) {

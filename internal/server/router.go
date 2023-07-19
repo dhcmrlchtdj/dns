@@ -7,8 +7,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog"
 
-	"github.com/dhcmrlchtdj/godns/config"
-	"github.com/dhcmrlchtdj/godns/util"
+	"github.com/dhcmrlchtdj/godns/internal/config"
+	"github.com/dhcmrlchtdj/godns/internal/util"
 )
 
 type router struct {

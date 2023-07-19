@@ -4,7 +4,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 
-	"github.com/dhcmrlchtdj/godns/server"
+	"github.com/dhcmrlchtdj/godns/internal/server"
 )
 
 func main() {
