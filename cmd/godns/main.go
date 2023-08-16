@@ -1,14 +1,16 @@
 package main
 
 import (
+	"strconv"
+
+	"github.com/morikuni/failure"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/pkgerrors"
 
 	"github.com/dhcmrlchtdj/godns/internal/server"
 )
 
 func main() {
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack // nolint:reassign
+	zerolog.ErrorStackMarshaler = marshalStack // nolint:reassign
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	dnsServer := server.NewDnsServer()
@@ -25,4 +27,21 @@ func main() {
 	dnsServer.SetupServer()
 	dnsServer.SetupPprof()
 	dnsServer.Start()
+}
+
+func marshalStack(err error) interface{} {
+	cs, ok := failure.CallStackOf(err)
+	if !ok {
+		return nil
+	}
+	frames := cs.Frames()
+	out := make([]map[string]string, 0, len(frames))
+	for _, frame := range frames {
+		out = append(out, map[string]string{
+			"path": frame.Path(),
+			"line": strconv.Itoa(frame.Line()),
+			"func": frame.Func(),
+		})
+	}
+	return out
 }

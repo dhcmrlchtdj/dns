@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"os"
@@ -14,7 +15,6 @@ import (
 	_ "net/http/pprof" // #nosec
 
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/internal/config"
