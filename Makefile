@@ -12,10 +12,10 @@ GOFLAGS := -buildvcs=false -buildmode=pie -mod=readonly -trimpath
 .PHONY: dev build fmt lint test clean outdated upgrade
 
 build:
-	GOEXPERIMENT=loopvar CGO_ENABLED=0 go build $(GOFLAGS) -o _build/ ./cmd/...
+	CGO_ENABLED=0 go build $(GOFLAGS) -o _build/ ./cmd/...
 
 dev:
-	GOEXPERIMENT=loopvar go run -race ./cmd/godns --conf=./aur/config.json --log-level=trace --port=1053
+	go run -race ./cmd/godns --conf=./aur/config.json --log-level=trace --port=1053
 
 fmt:
 	gopls format -w **/*.go
