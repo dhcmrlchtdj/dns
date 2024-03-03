@@ -39,11 +39,11 @@ func (pat *Pattern) IsValid() error {
 		switch pat.Builtin {
 		case "china-list": // do nothing
 		default:
-			return errors.WithMessage(ErrPatternBuiltin, pat.Builtin)
+			return errors.Wrap(ErrPatternBuiltin, pat.Builtin)
 		}
 		if pat.BuiltinProxy != "" {
 			if _, err := url.Parse(pat.BuiltinProxy); err != nil {
-				return errors.WithMessage(ErrPatternBuiltinProxy, pat.BuiltinProxy)
+				return errors.Wrap(ErrPatternBuiltinProxy, pat.BuiltinProxy)
 			}
 		}
 	} else if len(pat.Domain) == 0 && len(pat.Suffix) == 0 {
@@ -51,7 +51,7 @@ func (pat *Pattern) IsValid() error {
 	}
 	if pat.Record != "" {
 		if _, found := dns.StringToType[pat.Record]; !found {
-			return errors.WithMessage(ErrPatternRecord, pat.Record)
+			return errors.Wrap(ErrPatternRecord, pat.Record)
 		}
 	}
 	return nil
@@ -73,7 +73,7 @@ func (up *Upstream) IsValid() error {
 	}
 	if up.Block != "" {
 		if up.Block != "nodata" && up.Block != "nxdomain" {
-			return errors.WithMessage(ErrUpstreamBlockAction, up.Block)
+			return errors.Wrap(ErrUpstreamBlockAction, up.Block)
 		}
 		if up.Ipv4 != "" || up.Ipv6 != "" || up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
 			return ErrUpstreamInvalid
@@ -81,7 +81,7 @@ func (up *Upstream) IsValid() error {
 	}
 	if up.Ipv4 != "" {
 		if net.ParseIP(up.Ipv4) == nil || strings.Contains(up.Ipv4, ":") {
-			return errors.WithMessage(ErrUpstreamIpv4, up.Ipv4)
+			return errors.Wrap(ErrUpstreamIpv4, up.Ipv4)
 		}
 		if up.Ipv6 != "" || up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
 			return ErrUpstreamInvalid
@@ -89,7 +89,7 @@ func (up *Upstream) IsValid() error {
 	}
 	if up.Ipv6 != "" {
 		if net.ParseIP(up.Ipv6) == nil || strings.Count(up.Ipv6, ":") < 2 {
-			return errors.WithMessage(ErrUpstreamIpv6, up.Ipv6)
+			return errors.Wrap(ErrUpstreamIpv6, up.Ipv6)
 		}
 		if up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
 			return ErrUpstreamInvalid
@@ -97,7 +97,7 @@ func (up *Upstream) IsValid() error {
 	}
 	if up.Udp != "" {
 		if _, _, err := net.SplitHostPort(up.Udp); err != nil {
-			return errors.WithMessage(ErrUpstreamUdp, up.Udp)
+			return errors.Wrap(ErrUpstreamUdp, up.Udp)
 		}
 		if up.Doh != "" || up.DohProxy != "" {
 			return ErrUpstreamInvalid
@@ -105,12 +105,12 @@ func (up *Upstream) IsValid() error {
 	}
 	if up.Doh != "" {
 		if _, err := url.Parse(up.Doh); err != nil {
-			return errors.WithMessage(ErrUpstreamDoh, up.Doh)
+			return errors.Wrap(ErrUpstreamDoh, up.Doh)
 		}
 	}
 	if up.DohProxy != "" {
 		if _, err := url.Parse(up.DohProxy); err != nil {
-			return errors.WithMessage(ErrUpstreamDohProxy, up.DohProxy)
+			return errors.Wrap(ErrUpstreamDohProxy, up.DohProxy)
 		}
 		if up.Doh == "" {
 			return ErrUpstreamInvalid
