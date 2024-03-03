@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/morikuni/failure"
+	"github.com/pkg/errors"
 )
 
 func (r *Rule) IsValid() error {
@@ -24,96 +24,96 @@ func (r *Rule) IsValid() error {
 }
 
 var (
-	ErrPatternInvalid      failure.StringCode = "InvalidPattern"
-	ErrPatternDomain       failure.StringCode = "InvalidDomain"
-	ErrPatternRecord       failure.StringCode = "InvalidRecord"
-	ErrPatternBuiltin      failure.StringCode = "invalidBuiltInRule"
-	ErrPatternBuiltinProxy failure.StringCode = "InvalidBuiltInProxy"
+	ErrPatternInvalid      = errors.New("invalid pattern")
+	ErrPatternDomain       = errors.New("invalid domain pattern")
+	ErrPatternRecord       = errors.New("invalid record type")
+	ErrPatternBuiltin      = errors.New("invalid builtin rule")
+	ErrPatternBuiltinProxy = errors.New("invalid builtin proxy")
 )
 
 func (pat *Pattern) IsValid() error {
 	if pat == nil {
-		return failure.New(ErrPatternInvalid)
+		return ErrPatternInvalid
 	}
 	if pat.Builtin != "" {
 		switch pat.Builtin {
 		case "china-list": // do nothing
 		default:
-			return failure.New(ErrPatternBuiltin)
+			return errors.WithMessage(ErrPatternBuiltin, pat.Builtin)
 		}
 		if pat.BuiltinProxy != "" {
 			if _, err := url.Parse(pat.BuiltinProxy); err != nil {
-				return failure.New(ErrPatternBuiltinProxy)
+				return errors.WithMessage(ErrPatternBuiltinProxy, pat.BuiltinProxy)
 			}
 		}
 	} else if len(pat.Domain) == 0 && len(pat.Suffix) == 0 {
-		return failure.New(ErrPatternDomain)
+		return ErrPatternDomain
 	}
 	if pat.Record != "" {
 		if _, found := dns.StringToType[pat.Record]; !found {
-			return failure.New(ErrPatternRecord)
+			return errors.WithMessage(ErrPatternRecord, pat.Record)
 		}
 	}
 	return nil
 }
 
 var (
-	ErrUpstreamInvalid     failure.StringCode = "InvalidUpstream"
-	ErrUpstreamBlockAction failure.StringCode = "UnsupportedBlockAction"
-	ErrUpstreamIpv4        failure.StringCode = "InvalidIpv4"
-	ErrUpstreamIpv6        failure.StringCode = "InvalidIpv6"
-	ErrUpstreamUdp         failure.StringCode = "InvalidUdp"
-	ErrUpstreamDoh         failure.StringCode = "InvalidDoh"
-	ErrUpstreamDohProxy    failure.StringCode = "InvalidDohProxy"
+	ErrUpstreamInvalid     = errors.New("invalid upstream")
+	ErrUpstreamBlockAction = errors.New("unsupported block action")
+	ErrUpstreamIpv4        = errors.New("invalid IPv4")
+	ErrUpstreamIpv6        = errors.New("invalid IPv6")
+	ErrUpstreamUdp         = errors.New("invalid UDP")
+	ErrUpstreamDoh         = errors.New("invalid DOH")
+	ErrUpstreamDohProxy    = errors.New("invalid DOH proxy")
 )
 
 func (up *Upstream) IsValid() error {
 	if up == nil {
-		return failure.New(ErrUpstreamInvalid)
+		return ErrUpstreamInvalid
 	}
 	if up.Block != "" {
 		if up.Block != "nodata" && up.Block != "nxdomain" {
-			return failure.New(ErrUpstreamBlockAction)
+			return errors.WithMessage(ErrUpstreamBlockAction, up.Block)
 		}
 		if up.Ipv4 != "" || up.Ipv6 != "" || up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
-			return failure.New(ErrUpstreamInvalid)
+			return ErrUpstreamInvalid
 		}
 	}
 	if up.Ipv4 != "" {
 		if net.ParseIP(up.Ipv4) == nil || strings.Contains(up.Ipv4, ":") {
-			return failure.New(ErrUpstreamIpv4)
+			return errors.WithMessage(ErrUpstreamIpv4, up.Ipv4)
 		}
 		if up.Ipv6 != "" || up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
-			return failure.New(ErrUpstreamInvalid)
+			return ErrUpstreamInvalid
 		}
 	}
 	if up.Ipv6 != "" {
 		if net.ParseIP(up.Ipv6) == nil || strings.Count(up.Ipv6, ":") < 2 {
-			return failure.New(ErrUpstreamIpv6)
+			return errors.WithMessage(ErrUpstreamIpv6, up.Ipv6)
 		}
 		if up.Udp != "" || up.Doh != "" || up.DohProxy != "" {
-			return failure.New(ErrUpstreamInvalid)
+			return ErrUpstreamInvalid
 		}
 	}
 	if up.Udp != "" {
 		if _, _, err := net.SplitHostPort(up.Udp); err != nil {
-			return failure.New(ErrUpstreamUdp)
+			return errors.WithMessage(ErrUpstreamUdp, up.Udp)
 		}
 		if up.Doh != "" || up.DohProxy != "" {
-			return failure.New(ErrUpstreamInvalid)
+			return ErrUpstreamInvalid
 		}
 	}
 	if up.Doh != "" {
 		if _, err := url.Parse(up.Doh); err != nil {
-			return failure.New(ErrUpstreamDoh)
+			return errors.WithMessage(ErrUpstreamDoh, up.Doh)
 		}
 	}
 	if up.DohProxy != "" {
 		if _, err := url.Parse(up.DohProxy); err != nil {
-			return failure.New(ErrUpstreamDohProxy)
+			return errors.WithMessage(ErrUpstreamDohProxy, up.DohProxy)
 		}
 		if up.Doh == "" {
-			return failure.New(ErrUpstreamInvalid)
+			return ErrUpstreamInvalid
 		}
 	}
 	return nil
