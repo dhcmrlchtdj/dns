@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -26,6 +27,7 @@ func (u *Udp) Resolve(ctx context.Context, question dns.Question, dnssec bool) (
 	}
 	in, err := dns.ExchangeContext(ctx, msg, u.server)
 	if err != nil {
+		err = errors.WithStack(err)
 		logger.Error().Stack().Err(err).Send()
 		return nil, err
 	}

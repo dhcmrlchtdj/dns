@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -44,18 +45,21 @@ func (c *ChinaList) Fetch() ([]string, error) {
 
 	req, err := http.NewRequestWithContext(c.ctx, "GET", CHINA_LIST_URL, http.NoBody)
 	if err != nil {
+		err = errors.WithStack(err)
 		logger.Error().Stack().Err(err).Msg("failed to create request")
 		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		err = errors.WithStack(err)
 		logger.Error().Stack().Err(err).Msg("failed to send request")
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		err = errors.WithStack(err)
 		logger.Error().Stack().Err(err).Int("StatusCode", resp.StatusCode).Msg("StatusCode")
 		return nil, err
 	}

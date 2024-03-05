@@ -31,7 +31,6 @@ disable = [
 	"musttag",
 	"paralleltest",
 	"revive",
-	"wrapcheck",
 	"depguard",
 ]
 
