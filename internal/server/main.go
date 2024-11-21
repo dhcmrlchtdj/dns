@@ -37,18 +37,15 @@ func NewDnsServer() *DnsServer {
 
 func (s *DnsServer) SetupContext() {
 	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 	s.ctx = logger.WithContext(ctx)
 
 	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		sig := <-c
+		<-ctx.Done()
 		logger.Info().
 			Str("module", "server.main").
-			Str("signal", sig.String()).
 			Msg("DNS server is stopping")
-		cancel()
 
 		s.shutdownDNS()
 		s.shutdownPprof()
@@ -144,7 +141,7 @@ func (s *DnsServer) startDNS() {
 }
 
 func (s *DnsServer) shutdownDNS() {
-	err := s.dnsServer.Shutdown()
+	err := s.dnsServer.ShutdownContext(s.ctx)
 	if err != nil {
 		zerolog.Ctx(s.ctx).
 			Error().
