@@ -7,6 +7,7 @@ url="https://github.com/dhcmrlchtdj/godns"
 license=('Apache-2.0')
 makedepends=('go' 'git')
 provides=('godns')
+options=(!debug)
 backup=(etc/godns/config.json)
 source=(
 	"config.json"
@@ -35,8 +36,7 @@ build() {
 	export CGO_CFLAGS="${CFLAGS}"
 	export CGO_CXXFLAGS="${CXXFLAGS}"
 	export CGO_LDFLAGS="${LDFLAGS}"
-	export GOFLAGS="-trimpath -buildmode=pie -buildvcs=false -mod=readonly -modcacherw"
-	export GOEXPERIMENT=loopvar
+	export GOFLAGS="-trimpath -buildmode=pie -buildvcs=false -mod=readonly -modcacherw -ldflags=\"-w -s\""
 	go build -o build/ ./cmd/...
 }
 
