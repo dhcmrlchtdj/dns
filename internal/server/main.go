@@ -6,10 +6,8 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
 	"sync"
-	"syscall"
 	"time"
 
 	_ "net/http/pprof" // #nosec
@@ -31,17 +29,12 @@ type DnsServer struct {
 	Config        config.Config
 }
 
-func NewDnsServer() *DnsServer {
+func NewDnsServer(ctx context.Context) *DnsServer {
 	server := new(DnsServer)
 	server.cache = shardmap.New[string, *deferredAnswer](64)
-	return server
-}
 
-func (s *DnsServer) SetupContext() {
 	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-	s.ctx = logger.WithContext(ctx)
+	server.ctx = logger.WithContext(ctx)
 
 	go func() {
 		<-ctx.Done()
@@ -49,9 +42,11 @@ func (s *DnsServer) SetupContext() {
 			Str("module", "server.main").
 			Msg("DNS server is stopping")
 
-		s.shutdownDNS()
-		s.shutdownPprof()
+		server.shutdownDNS()
+		server.shutdownPprof()
 	}()
+
+	return server
 }
 
 func (s *DnsServer) SetupRouter() {
@@ -143,7 +138,7 @@ func (s *DnsServer) startDNS() {
 }
 
 func (s *DnsServer) shutdownDNS() {
-	err := s.dnsServer.ShutdownContext(s.ctx)
+	err := s.dnsServer.Shutdown()
 	if err != nil {
 		zerolog.Ctx(s.ctx).
 			Error().
@@ -181,7 +176,7 @@ func (s *DnsServer) startPprof() {
 }
 
 func (s *DnsServer) shutdownPprof() {
-	err := s.pprofServer.Shutdown(s.ctx)
+	err := s.pprofServer.Shutdown(context.Background())
 	if err != nil {
 		zerolog.Ctx(s.ctx).
 			Error().

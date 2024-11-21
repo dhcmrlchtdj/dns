@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+	"os/signal"
+	"syscall"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 
@@ -8,11 +12,13 @@ import (
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack // nolint:reassign
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	dnsServer := server.NewDnsServer()
-	dnsServer.SetupContext()
+	dnsServer := server.NewDnsServer(ctx)
 	dnsServer.ParseArgs()
 
 	level, err := zerolog.ParseLevel(dnsServer.Config.LogLevel)
