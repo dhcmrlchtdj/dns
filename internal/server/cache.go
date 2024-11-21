@@ -26,20 +26,13 @@ func (s *DnsServer) cacheGet(ctx context.Context, key string) ([]dns.RR, *int) {
 		Str("key", key).
 		Logger()
 
-	val, found := s.cache.Load(key)
+	deferred, found := s.cache.Get(key)
 	if !found {
 		logger.Trace().Msg("missed")
 		return nil, nil
 	}
 
-	deferredAnswer, ok := val.(*deferredAnswer)
-	if !ok {
-		s.cache.Delete(key)
-		logger.Trace().Msg("invalid")
-		return nil, nil
-	}
-
-	cached, rcode := deferredAnswer.Wait()
+	cached, rcode := deferred.Wait()
 	if rcode != nil {
 		s.cache.Delete(key)
 		logger.Trace().Str("rcode", dns.RcodeToString[*rcode]).Msg("rcode")
@@ -67,16 +60,22 @@ func (s *DnsServer) cacheGet(ctx context.Context, key string) ([]dns.RR, *int) {
 	return cached.answer, nil
 }
 
-func (s *DnsServer) cacheSet(ctx context.Context, key string, deferredAnswer *deferredAnswer) {
+func (s *DnsServer) cacheSet(ctx context.Context, key string, deferred *deferredAnswer) {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "server.cache.set").
 		Str("key", key).
 		Logger()
 
-	s.cache.LoadOrStore(key, deferredAnswer)
-
-	logger.Trace().Msg("added")
+	s.cache.Mutate(key, func(old *deferredAnswer, found bool) (*deferredAnswer, bool) {
+		if found {
+			logger.Trace().Msg("existed")
+			return old, true
+		} else {
+			logger.Trace().Msg("added")
+			return deferred, true
+		}
+	})
 }
 
 func (s *DnsServer) cacheResolve(ctx context.Context, key string, answer []dns.RR) {
@@ -86,16 +85,9 @@ func (s *DnsServer) cacheResolve(ctx context.Context, key string, answer []dns.R
 		Str("key", key).
 		Logger()
 
-	val, found := s.cache.Load(key)
+	deferred, found := s.cache.Get(key)
 	if !found {
 		logger.Trace().Msg("missed")
-		return
-	}
-
-	deferredAnswer, ok := val.(*deferredAnswer)
-	if !ok {
-		s.cache.Delete(key)
-		logger.Trace().Msg("invalid")
 		return
 	}
 
@@ -117,7 +109,7 @@ func (s *DnsServer) cacheResolve(ctx context.Context, key string, answer []dns.R
 		answer:  answer,
 		expired: time.Now().Add(time.Duration(ttl) * time.Second),
 	}
-	deferredAnswer.Resolve(&ans)
+	deferred.Resolve(&ans)
 
 	logger.Trace().Uint32("TTL", ttl).Msg("resolved")
 }
@@ -129,23 +121,15 @@ func (s *DnsServer) cacheReject(ctx context.Context, key string, rcode int) {
 		Str("key", key).
 		Logger()
 
-	val, found := s.cache.Load(key)
+	deferred, found := s.cache.Delete(key)
 	if !found {
 		logger.Trace().Msg("missed")
 		return
 	}
 
-	deferredAnswer, ok := val.(*deferredAnswer)
-	if !ok {
-		s.cache.Delete(key)
-		logger.Trace().Msg("invalid")
-		return
-	}
-
-	deferredAnswer.Reject(&rcode)
+	deferred.Reject(&rcode)
 	logger.Trace().Msg("rejected")
 
-	s.cache.Delete(key)
 	logger.Trace().Str("rcode", dns.RcodeToString[rcode]).Msg("rcode")
 }
 
@@ -162,30 +146,29 @@ func (s *DnsServer) cleanupExpiredCache() {
 		select {
 		case <-ticker.C:
 			logger.Trace().Msg("cleaning")
-			s.cache.Range(func(key any, val any) bool {
-				deferredAnswer, ok := val.(*deferredAnswer)
-				if !ok {
-					s.cache.Delete(key)
-					logger.Trace().Msg("invalid")
-					return true
+			var allKey []string
+			s.cache.Range(func(key string, val *deferredAnswer) bool {
+				allKey = append(allKey, key)
+				return true
+			})
+			for _, key := range allKey {
+				deferred, found := s.cache.Get(key)
+				if !found {
+					continue
 				}
 
-				cached, rcode := deferredAnswer.Wait()
+				cached, rcode := deferred.Wait()
 				if rcode != nil {
 					s.cache.Delete(key)
 					logger.Trace().Str("rcode", dns.RcodeToString[*rcode]).Msg("rcode")
-					return true
 				}
 
 				sec := math.Ceil(time.Until(cached.expired).Seconds())
 				if sec <= 0 {
 					s.cache.Delete(key)
 					logger.Trace().Msg("expired")
-					return true
 				}
-
-				return true
-			})
+			}
 			logger.Trace().Msg("cleaned")
 		case <-s.ctx.Done():
 			ticker.Stop()

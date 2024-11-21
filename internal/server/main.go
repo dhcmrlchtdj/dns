@@ -15,6 +15,7 @@ import (
 	_ "net/http/pprof" // #nosec
 
 	"github.com/miekg/dns"
+	"github.com/phuslu/shardmap"
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/internal/config"
@@ -26,12 +27,13 @@ type DnsServer struct {
 	pprofListener net.Listener
 	ctx           context.Context
 	router        *router
-	cache         sync.Map
+	cache         *shardmap.Map[string, *deferredAnswer]
 	Config        config.Config
 }
 
 func NewDnsServer() *DnsServer {
 	server := new(DnsServer)
+	server.cache = shardmap.New[string, *deferredAnswer](64)
 	return server
 }
 
