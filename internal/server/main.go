@@ -175,6 +175,7 @@ func (s *DnsServer) startPprof() {
 	}
 }
 
+// nolint: contextcheck
 func (s *DnsServer) shutdownPprof() {
 	err := s.pprofServer.Shutdown(context.Background())
 	if err != nil {
