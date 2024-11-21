@@ -2,9 +2,9 @@ package client
 
 import (
 	"context"
-	"sync"
 
 	"github.com/miekg/dns"
+	"github.com/phuslu/shardmap"
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/internal/config"
@@ -14,7 +14,7 @@ type DnsResolver interface {
 	Resolve(ctx context.Context, question dns.Question, dnssec bool) ([]dns.RR, error)
 }
 
-var resolverCache = new(sync.Map)
+var resolverCache = shardmap.New[string, DnsResolver](8)
 
 func GetByUpstream(ctx context.Context, upstream *config.Upstream) DnsResolver {
 	if upstream == nil {

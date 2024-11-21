@@ -17,16 +17,16 @@ type Doh struct {
 	server     string
 }
 
-func createDohResolver(ctx context.Context, doh string, dohProxy string) *Doh {
+func createDohResolver(ctx context.Context, doh string, dohProxy string) DnsResolver {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "client.doh").
 		Logger()
 
 	cacheKey := doh + "|" + dohProxy
-	if client, found := resolverCache.Load(cacheKey); found {
+	if client, found := resolverCache.Get(cacheKey); found {
 		logger.Trace().Msg("get resolver from cache")
-		return client.(*Doh)
+		return client
 	} else {
 		httpClient := new(http.Client)
 		if dohProxy != "" {
@@ -39,7 +39,7 @@ func createDohResolver(ctx context.Context, doh string, dohProxy string) *Doh {
 			}
 		}
 		client := &Doh{server: doh, httpClient: httpClient}
-		resolverCache.Store(cacheKey, client)
+		resolverCache.Set(cacheKey, client)
 		logger.Trace().Msg("new resolver created")
 		return client
 	}

@@ -28,18 +28,18 @@ func (ip *Ipv6) Resolve(ctx context.Context, question dns.Question, dnssec bool)
 	return []dns.RR{rr}, nil
 }
 
-func createIpv6Resolver(ctx context.Context, ip string) *Ipv6 {
+func createIpv6Resolver(ctx context.Context, ip string) DnsResolver {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "client.ipv6").
 		Logger()
 
-	if client, found := resolverCache.Load(ip); found {
+	if client, found := resolverCache.Get(ip); found {
 		logger.Trace().Msg("get resolver from cache")
-		return client.(*Ipv6)
+		return client
 	} else {
 		client := &Ipv6{ip: net.ParseIP(ip)}
-		resolverCache.Store(ip, client)
+		resolverCache.Set(ip, client)
 		logger.Trace().Msg("new resolver created")
 		return client
 	}

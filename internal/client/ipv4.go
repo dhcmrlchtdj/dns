@@ -28,18 +28,18 @@ func (ip *Ipv4) Resolve(ctx context.Context, question dns.Question, dnssec bool)
 	return []dns.RR{rr}, nil
 }
 
-func createIpv4Resolver(ctx context.Context, ip string) *Ipv4 {
+func createIpv4Resolver(ctx context.Context, ip string) DnsResolver {
 	logger := zerolog.Ctx(ctx).
 		With().
 		Str("module", "client.ipv4").
 		Logger()
 
-	if client, found := resolverCache.Load(ip); found {
+	if client, found := resolverCache.Get(ip); found {
 		logger.Trace().Msg("get resolver from cache")
-		return client.(*Ipv4)
+		return client
 	} else {
 		client := &Ipv4{ip: net.ParseIP(ip)}
-		resolverCache.Store(ip, client)
+		resolverCache.Set(ip, client)
 		logger.Trace().Msg("new resolver created")
 		return client
 	}
