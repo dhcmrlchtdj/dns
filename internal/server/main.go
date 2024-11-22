@@ -14,6 +14,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/phuslu/shardmap"
+	"github.com/rs/xid"
 	"github.com/rs/zerolog"
 
 	"github.com/dhcmrlchtdj/godns/internal/config"
@@ -34,6 +35,7 @@ func NewDnsServer(ctx context.Context) *DnsServer {
 	server.cache = shardmap.New[string, *deferredAnswer](64)
 
 	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger = logger.Hook(LogIdHook{})
 	server.ctx = logger.WithContext(ctx)
 
 	go func() {
@@ -187,4 +189,12 @@ func (s *DnsServer) shutdownPprof() {
 			Send()
 		panic(err)
 	}
+}
+
+///
+
+type LogIdHook struct{}
+
+func (h LogIdHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
+	e.Str("logId", xid.New().String())
 }

@@ -14,7 +14,12 @@ build:
 	CGO_ENABLED=0 go build $(GOFLAGS) -o _build/ ./cmd/...
 
 dev:
-	go run -race ./cmd/godns --conf=./aur/config.json --log-level=trace --port=1053
+	go run -race ./cmd/godns \
+		--conf=./aur/config.json \
+		--log-level=trace \
+		--port=1053 \
+		2>&1 | \
+		jq -R '. as $$line | try fromjson catch $$line'
 
 fmt:
 	gopls format -w **/*.go

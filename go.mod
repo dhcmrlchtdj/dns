@@ -6,6 +6,7 @@ require (
 	github.com/miekg/dns v1.1.62
 	github.com/phuslu/shardmap v0.0.0-20230929024548-c0f3d8a4fccd
 	github.com/pkg/errors v0.9.1
+	github.com/rs/xid v1.6.0
 	github.com/rs/zerolog v1.33.0
 )
 

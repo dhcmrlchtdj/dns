@@ -146,6 +146,7 @@ func (s *DnsServer) cleanupExpiredCache() {
 		select {
 		case <-ticker.C:
 			logger.Trace().Msg("cleaning")
+			start := time.Now()
 			var allKey []string
 			s.cache.Range(func(key string, val *deferredAnswer) bool {
 				allKey = append(allKey, key)
@@ -169,7 +170,8 @@ func (s *DnsServer) cleanupExpiredCache() {
 					logger.Trace().Msg("expired")
 				}
 			}
-			logger.Trace().Msg("cleaned")
+			used := time.Since(start)
+			logger.Trace().Dur("duration", used).Msg("cleaned")
 		case <-s.ctx.Done():
 			ticker.Stop()
 			return

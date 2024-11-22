@@ -50,7 +50,6 @@ func (r *router) addRules(ctx context.Context, rules []*config.Rule, serverStart
 					zerolog.Ctx(ctx).
 						Error().
 						Str("module", "server.router").
-						Stack().
 						Err(err).
 						Msg("failed to load china-list")
 				}
